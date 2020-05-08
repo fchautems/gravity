@@ -3,7 +3,7 @@ class Star(object):
 		self.p=[x,y,z]
 		self.v=[vx,vy,vz]
 		self.m=m
-		print("constructeur V :",self.v,id(self.p))
+		#print("constructeur V :",self.v[0],self.v[1],self.v[2],id(self.p))
 	
 	def getCoord(self):
 		return self.p

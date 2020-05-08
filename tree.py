@@ -1,11 +1,11 @@
 from math import *
 class Tree(object):
 	liste=[]
-	teta=0.5
-	G=0.1
-	t=0.1
+	teta=0.3
+	G=0.15
+	t=0.02
 	
-	def __init__(self, s=None,min=[.0,.0,.0],max=[1000.0,1000.0,1000.0],root=False,rootTree=None):
+	def __init__(self, s=None,min=[-500.0,-500.0,-500.0],max=[500.0,500.0,500.0],root=False,rootTree=None):
 		self.root=root
 		if root:
 			##print("c'est le root !")
@@ -110,6 +110,16 @@ class Tree(object):
 		y2=self.coord[1]
 		z2=self.coord[2]
 		
+		d=sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+		if d<0.001:
+			print("==========================================================")
+			print("DISTANCE :",d)
+			print("==========================================================")
+		
+		if x1>900 or x2>900 or y1>900 or y2>900 or z1>900 or z2>900:
+			print("==========================================================")
+			print("DISTANCE :",d)
+			print("==========================================================")
 		#print("NODE : ",node,node.coord,node.star)
 		#print("SELF : ",self,self.coord,self.star)
 		
@@ -186,16 +196,20 @@ class Tree(object):
 	def parcoursCalcul(self,n=0):
 		#print("========================== CALCUL =======================================")
 		if self.star is not None:
+			#print("n:",n,"parcoursCalcul asf:",self.star.getV()[0],self.star.getV()[1],self.star.getV()[2])
 			for i in range(0,3):
-				print(i," Tree.V : ", self.v[i],"Star.V",self.star.getV()[i])
+				#print("N:",n,"i:",i," Tree.V : ", self.v[i],"Star.V",self.star.getV()[i],self.star.getV())
 				self.v[i]=self.a[i]*Tree.t+self.star.getV()[i]
 				self.coord[i]=self.v[i]*Tree.t+self.coord[i]
-				self.star.setV(self.v)
-				self.star.setCoord(self.coord)
-				print(i," Tree.V : ", self.v[i],"Star.V",self.star.getV()[i])
+
+				#print(i," Tree.V : ", self.v[i],"Star.V",self.star.getV()[i])
 				#print(n, "a :",self.a, "coord :", self.coord, "vitesse :", self.v)
-				
-			print("==========================")
+			
+			self.star.setV(self.v)
+			self.star.setCoord(self.coord)
+			if n>900:
+				print("========================================================================================0")
+			#print("==========================")
 				
 		for i in range(0,8):
 			if self.leaf[i] is not None:

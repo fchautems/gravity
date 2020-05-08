@@ -10,7 +10,7 @@ gc.enable()
 
 app = Ursina()						  # Initialise your Ursina app
 print("execute")
-max=10
+max=15
 
 listStar=[]
 n=200
@@ -25,6 +25,10 @@ window.fullscreen = False			   # Do not go Fullscreen
 window.exit_button.visible = False	  # Do not show the in-game red X that loses the window
 window.fps_counter.enabled = True 
 
+sx=0
+sy=0
+sz=0
+
 for i in range (0,n):
 	d=random.uniform(0.0, 1.0)
 	a=random.uniform(0.0, 2*pi)
@@ -36,46 +40,34 @@ for i in range (0,n):
 	x=max*(x+1)/2
 	y=max*(y+1)/2
 	z=max*(z+1)/2
-	#print(x,y,z)
-	vx=random.uniform(-0.05, 0.05)
-	vy=random.uniform(-0.05, 0.05)
-	vz=random.uniform(-0.05, 0.05)
-	m=random.uniform(0.5, 0.9)
+	print(x,y,z)
+	sx+=x
+	sy+=y
+	sz+=z
+	vx=random.uniform(-0.5, 0.5)
+	vy=random.uniform(-0.5, 0.5)
+	vz=random.uniform(-0.5, 0.5)
+	m=random.uniform(0.01, 2.0)
 	listStar.append(Star(x,y,z,vx,vy,vz,m))
 	t.addStar(listStar[i])
-	newcircle = Entity(model='circle', color=color.red, position=(x, y, z), scale=(s,s,s))
+	newcircle = Entity(model='circle', color=color.white, position=(x, y, z), scale=(s,s,s))
 	circles.append(newcircle)
-	
 
-s1=Star(5,5,10,0,0,0,10)
+print(sx/n,sy/n,sz/n)
+
+s1=Star(7.5,7.5,7.5,0,0,0,1000)
 # s2=Star(1,1,1,0.1,0,0,2)
 t.addStar(s1)
 #t.addStar(s2)
 listStar.append(s1)
 # listStar.append(s2)
-newcircle = Entity(model='circle', color=color.blue, position=(5,5,5), scale=(s,s,s))
+newcircle = Entity(model='sphere', color=color.red, position=(5,5,5), scale=(10*s,10*s,10*s))
 circles.append(newcircle)                                    
 # newcircle = Entity(model='circle', color=color.red, position=(1,1,1), scale=(s,s,s))
 # circles.append(newcircle)
 
-camera.position = (4.5,4.5,-20)	
+camera.position = (7.5,7.5,-20)	
 print(camera.position)
-
-	# if held_keys['w']:                           
-		# camera.position += (0, 0.5, 0)           # move up verticallyq
-		# print(camera.position)
-	# if held_keys['s']:                           
-		# camera.position -= (0, 0.5, 0)           # move down vertically
-		# print(camera.position)
-	# if held_keys['a']:                           
-		# camera.position += (0.5, 0, 0)           # move left
-		# print(camera.position)
-	# if held_keys['d']:                           
-		# camera.position -= (0.5, 0, 0)           # move right
-		# print(camera.position)
-	# if held_keys['r']:                          
-		# camera.position += (0,0, 0.5)            # zoom in
-		# print(camera.position)
 		
 def update():
 	global t
@@ -91,26 +83,27 @@ def update():
 	#print("rien")
 	
 	if held_keys['w']:                           
-		camera.position += (0, 0.2, 0)           # move up verticallyq
+		camera.position += (0, 0.1, 0)           # move up verticallyq
 		# print(camera.position)
 	if held_keys['s']:                           
-		camera.position -= (0, 0.2, 0)           # move down vertically
+		camera.position -= (0, 0.1, 0)           # move down vertically
 		# print(camera.position)
 	if held_keys['a']:                           
-		camera.position += (0.2, 0, 0)           # move left
+		camera.position -= (0.1, 0, 0)           # move left
 		# print(camera.position)
 	if held_keys['d']:                           
-		camera.position -= (0.2, 0, 0)           # move right
+		camera.position += (0.1, 0, 0)           # move right
 		# print(camera.position)
 	if held_keys['r']:                          
-		camera.position += (0,0, 0.2)            # zoom in
+		camera.position += (0,0, 0.3)            # zoom in
 		# print(camera.position)
 	if held_keys['f']:                          
-		camera.position -= (0,0, 0.2)            # zoom in
+		camera.position -= (0,0, 0.3)            # zoom in
 		# print(camera.position)
 	
 	try:
 		l=[]
+		c=[]
 		#print("1")
 		t.parcoursBH()
 		t.parcoursCalcul()
@@ -128,6 +121,7 @@ def update():
 			if not(listStar[j].getCoord()[0]>50 or listStar[j].getCoord()[1]>50 or listStar[j].getCoord()[2]>50 or listStar[j].getCoord()[0]<-50 or listStar[j].getCoord()[1]<-50 or listStar[j].getCoord()[2]<-50):
 				#rint("append")
 				l.append(listStar[j])
+				c.append(circles[j])
 			else:
 				delete=True
 				#listeIndice.append(j)
@@ -135,7 +129,9 @@ def update():
 		if delete:
 			print("remove",n)
 		listStar=l
-		l=None
+		circles=c
+		del l
+		del c
 				
 	except:
 		print("exception")
@@ -145,6 +141,7 @@ def update():
 		#t=None
 		#print(sys.getrefcount(t))
 		#gc.collect()
+		t.kill()
 		t=Tree(root=True)
 		for j in range (0,n+1):
 			t.addStar(listStar[j])

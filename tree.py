@@ -1,9 +1,9 @@
 from math import *
 class Tree(object):
 	liste=[]
-	teta=0.3
-	G=0.15
-	t=0.02
+	teta=0.5
+	G=0.001
+	t=0.1
 	
 	def __init__(self, s=None,min=[-500.0,-500.0,-500.0],max=[500.0,500.0,500.0],root=False,rootTree=None):
 		self.root=root
@@ -13,7 +13,7 @@ class Tree(object):
 		else:
 			##print("une feuille")
 			self.rootTree=rootTree
-			
+		
 		self.star=s
 		self.min=min
 		self.max=max
@@ -36,7 +36,24 @@ class Tree(object):
 		else:
 			self.m=0
 			self.coord=[.0,.0,.0]
-			
+		
+	def kill(self):
+		del self.root
+		del self.star
+		del self.min
+		del self.max
+		del self.m
+		del self.a
+		del self.v
+		del self.coord
+		vide=True
+		for i in range(0,8):
+			if self.leaf[i] is not None:
+				vide=False
+				self.leaf[i].kill()
+		if vide:
+			del self.leaf
+	
 	# retourne le cadre dans lequel se trouve une étoile	
 	def frameNumber(self,s=None):
 		if s is None:
@@ -111,15 +128,15 @@ class Tree(object):
 		z2=self.coord[2]
 		
 		d=sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
-		if d<0.001:
-			print("==========================================================")
-			print("DISTANCE :",d)
-			print("==========================================================")
+		# if d<0.001:
+			# print("==========================================================")
+			# print("DISTANCE :",d)
+			# print("==========================================================")
 		
-		if x1>900 or x2>900 or y1>900 or y2>900 or z1>900 or z2>900:
-			print("==========================================================")
-			print("DISTANCE :",d)
-			print("==========================================================")
+		# if x1>900 or x2>900 or y1>900 or y2>900 or z1>900 or z2>900:
+			# print("==========================================================")
+			# print("DISTANCE :",d)
+			# print("==========================================================")
 		#print("NODE : ",node,node.coord,node.star)
 		#print("SELF : ",self,self.coord,self.star)
 		

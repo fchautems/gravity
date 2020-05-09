@@ -1,9 +1,11 @@
 from math import *
+import timeit
+
 class Tree(object):
 	liste=[]
 	teta=0.5
-	G=0.001
-	t=0.1
+	G=0.015
+	t=0.05
 	
 	def __init__(self, s=None,min=[-500.0,-500.0,-500.0],max=[500.0,500.0,500.0],root=False,rootTree=None):
 		self.root=root
@@ -143,6 +145,7 @@ class Tree(object):
 		return sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
 	
 	def calcA(self,node,f,d):
+		starttime = timeit.default_timer()
 		a=[.0,.0,.0]
 
 		x=-(node.coord[0]-self.coord[0])
@@ -152,6 +155,7 @@ class Tree(object):
 		a[0]=f*x/d
 		a[1]=f*y/d
 		a[2]=f*z/d
+		#print("CalcA :", timeit.default_timer() - starttime)
 		
 		return a
 		

@@ -4,19 +4,29 @@ from tree import Tree
 import random
 from math import *
 import gc
+import timeit
 
 sys.setrecursionlimit(1000)
 gc.enable()
 
 app = Ursina()						  # Initialise your Ursina app
 print("execute")
+print(timeit.timeit('output = 10*5'))
 max=15
+
+sizeC=30
 
 listStar=[]
 n=200
 s=0.02
 
-t=Tree(root=True)
+def BH(t): 
+    t.parcoursBH()
+	
+def calcul(t):
+	t.parcoursCalcul()
+
+t=Tree(None,[-sizeC,-sizeC,-sizeC],[sizeC,sizeC,sizeC],root=True)
 circles=[]
 
 window.title = 'My Game'				# The window title
@@ -44,10 +54,10 @@ for i in range (0,n):
 	sx+=x
 	sy+=y
 	sz+=z
-	vx=random.uniform(-0.5, 0.5)
-	vy=random.uniform(-0.5, 0.5)
-	vz=random.uniform(-0.5, 0.5)
-	m=random.uniform(0.01, 2.0)
+	vx=random.uniform(-0.03, 0.03)
+	vy=random.uniform(-0.03, 0.03)
+	vz=random.uniform(-0.03, 0.03)
+	m=random.uniform(0.001, 0.002)
 	listStar.append(Star(x,y,z,vx,vy,vz,m))
 	t.addStar(listStar[i])
 	newcircle = Entity(model='circle', color=color.white, position=(x, y, z), scale=(s,s,s))
@@ -55,13 +65,13 @@ for i in range (0,n):
 
 print(sx/n,sy/n,sz/n)
 
-s1=Star(7.5,7.5,7.5,0,0,0,1000)
+s1=Star(7.5,7.5,7.5,0,0,0,0.002)
 # s2=Star(1,1,1,0.1,0,0,2)
 t.addStar(s1)
 #t.addStar(s2)
 listStar.append(s1)
 # listStar.append(s2)
-newcircle = Entity(model='sphere', color=color.red, position=(5,5,5), scale=(10*s,10*s,10*s))
+newcircle = Entity(model='sphere', color=color.white, position=(5,5,5), scale=(1*s,1*s,1*s))
 circles.append(newcircle)                                    
 # newcircle = Entity(model='circle', color=color.red, position=(1,1,1), scale=(s,s,s))
 # circles.append(newcircle)
@@ -104,21 +114,31 @@ def update():
 	try:
 		l=[]
 		c=[]
-		#print("1")
-		t.parcoursBH()
-		t.parcoursCalcul()
+
+		# t.parcoursBH()
+		# t.parcoursCalcul()
 		
-		#rint("N : ",n)
-		if(listStar==None):
-			print("None")
+		starttime = timeit.default_timer()
+		#print("The start time is :",starttime)
+		BH(t)
+		print("Temps de parcoursBH :", timeit.default_timer() - starttime)
+
+		starttime = timeit.default_timer()
+		#print("The start time is :",starttime)
+		calcul(t)
+		print("Temps de parcoursCalcul :", timeit.default_timer() - starttime)
+			
+		starttime = timeit.default_timer()
 		for j in range (0,n+1):
 			#print(j)
 			circles[j].position=(listStar[j].getCoord()[0],listStar[j].getCoord()[1],listStar[j].getCoord()[2])
+		print("Temps d'affichage des cercle is :", timeit.default_timer() - starttime)
 		
 		#print("un")
+		starttime = timeit.default_timer()
 		delete=False
 		for j in range(0,n+1):
-			if not(listStar[j].getCoord()[0]>50 or listStar[j].getCoord()[1]>50 or listStar[j].getCoord()[2]>50 or listStar[j].getCoord()[0]<-50 or listStar[j].getCoord()[1]<-50 or listStar[j].getCoord()[2]<-50):
+			if not(listStar[j].getCoord()[0]>sizeC or listStar[j].getCoord()[1]>sizeC or listStar[j].getCoord()[2]>sizeC or listStar[j].getCoord()[0]<-sizeC or listStar[j].getCoord()[1]<-sizeC or listStar[j].getCoord()[2]<-sizeC):
 				#rint("append")
 				l.append(listStar[j])
 				c.append(circles[j])
@@ -126,27 +146,23 @@ def update():
 				delete=True
 				#listeIndice.append(j)
 				n=n-1
+		print("Temps suppression :", timeit.default_timer() - starttime)
 		if delete:
 			print("remove",n)
 		listStar=l
 		circles=c
 		del l
 		del c
-				
-	except:
-		print("exception")
-		sys.exit()
-	try:
-		#print("3")
-		#t=None
-		#print(sys.getrefcount(t))
-		#gc.collect()
+		starttime = timeit.default_timer()
 		t.kill()
-		t=Tree(root=True)
+		print("Kill :", timeit.default_timer() - starttime)
+		t=t=Tree(None,[-sizeC,-sizeC,-sizeC],[sizeC,sizeC,sizeC],root=True)
+		
+		starttime = timeit.default_timer()
 		for j in range (0,n+1):
 			t.addStar(listStar[j])
-		#print("4")
-	except RecursionError:
+		print("Temps de création du nouvel arbre :", timeit.default_timer() - starttime)
+	except:
 		#t=Tree(root=True)
 		for j in range (0,n+1):
 			print(listStar[j].getCoord())

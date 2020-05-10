@@ -6,6 +6,11 @@ from math import *
 import gc
 import timeit
 
+# 0.16
+# amelioration distance : 0.12
+# retour calcA remplace par calcul direct : 0.95
+# plus d'appel à addA : 0.85
+
 sys.setrecursionlimit(1000)
 gc.enable()
 
@@ -19,6 +24,78 @@ sizeC=30
 listStar=[]
 n=200
 s=0.02
+
+a=[0.0,0.0,0.0]
+
+b=[3.0,3.0,3.0]
+
+starttime = timeit.default_timer()
+for k in range (0,100000):
+	for i in range(0,3):
+		a[i]=1.0
+		
+#print(a)
+print("Temps de boucle :", timeit.default_timer() - starttime)
+
+
+starttime = timeit.default_timer()
+for k in range (0,100000):
+	a[0]=2
+	a[1]=2
+	a[2]=2
+		
+#print(a)
+print("Temps de boucle :", timeit.default_timer() - starttime)
+
+sa=Tree()
+sa.setCoord(1.0,2.0,3.0)
+
+sb=Tree()
+sb.setCoord(4.0,-5.0,1.0)
+
+def d1(self,node):
+	x1=node.coord[0]
+	y1=node.coord[1]
+	z1=node.coord[2]
+		
+	x2=self.coord[0]
+	y2=self.coord[1]
+	z2=self.coord[2]
+	
+	d=sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+	
+	return sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+	
+def d2(self,node):
+	return sqrt((node.coord[0]-self.coord[0])**2+(node.coord[1]-self.coord[1])**2+(node.coord[2]-self.coord[2])**2)
+
+asdf=0.0
+
+starttime = timeit.default_timer()
+for k in range (0,100000):
+	asdf=d1(sa,sb)
+print("Temps de boucle :", timeit.default_timer() - starttime)
+
+starttime = timeit.default_timer()
+for k in range (0,100000):
+	asdf=d2(sa,sb)
+print("Temps de boucle :", timeit.default_timer() - starttime)
+
+a1=0.0
+b1=1.0
+c1=2.3
+starttime = timeit.default_timer()
+for k in range (0,100000):
+	a1=b1/c1**3
+print("Temps de boucle :", timeit.default_timer() - starttime)
+
+starttime = timeit.default_timer()
+for k in range (0,100000):
+	a1=b1/c1/c1/c1
+print("Temps de boucle :", timeit.default_timer() - starttime)
+
+
+#sys.exit()
 
 def BH(t): 
     t.parcoursBH()

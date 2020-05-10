@@ -38,6 +38,11 @@ class Tree(object):
 		else:
 			self.m=0
 			self.coord=[.0,.0,.0]
+			
+	def setCoord(self,x,y,z):
+		self.coord[0]=x
+		self.coord[1]=y
+		self.coord[2]=z
 		
 	def kill(self):
 		del self.root
@@ -48,6 +53,7 @@ class Tree(object):
 		del self.a
 		del self.v
 		del self.coord
+		#del self.star
 		vide=True
 		for i in range(0,8):
 			if self.leaf[i] is not None:
@@ -145,17 +151,11 @@ class Tree(object):
 		return sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
 	
 	def calcA(self,node,f,d):
-		starttime = timeit.default_timer()
 		a=[.0,.0,.0]
-
-		x=-(node.coord[0]-self.coord[0])
-		y=-(node.coord[1]-self.coord[1])
-		z=-(node.coord[2]-self.coord[2])
 		
-		a[0]=f*x/d
-		a[1]=f*y/d
-		a[2]=f*z/d
-		#print("CalcA :", timeit.default_timer() - starttime)
+		a[0]=f*(self.coord[0]-node.coord[0])/d
+		a[1]=f*(self.coord[1]-node.coord[1])/d
+		a[2]=f*(self.coord[2]-node.coord[2])/d
 		
 		return a
 		
@@ -171,7 +171,14 @@ class Tree(object):
 	
 	def parcoursBH(self):
 		if self.star is not None:
-			self.addA(self.rootTree.barnesHut(self))
+		
+			a=self.rootTree.barnesHut(self)
+			self.a[0]+=a[0]
+			self.a[1]+=a[1]
+			self.a[2]+=a[2]
+		
+			#self.addA(self.rootTree.barnesHut(self))
+			
 			#self.a=
 			#if self==self.rootTree:
 				#print("BONJOUR :",self.a)
@@ -184,53 +191,53 @@ class Tree(object):
 					self.leaf[i].parcoursBH()
 					
 	def barnesHut(self,node):
-		#print("BH self :",self.star, self.root)
-		#print("BH node :",node.star, node.root)
-		
 		a=[0.0,0.0,0.0]
 		
 		# c'est le même noeud donc pas de calcul de force
 		if self==node:
 			return a
 			
-		s=(self.max[0]-self.min[0])
-		d=self.distance(node)
+		d=sqrt((node.coord[0]-self.coord[0])**2+(node.coord[1]-self.coord[1])**2+(node.coord[2]-self.coord[2])**2)
+		#OPTIMISATION
+		#d=self.distance(node)
 		
 		# ce n'est pas un noeuf final
 		if self.star is None:
+			s=(self.max[0]-self.min[0])
 			# le rapport s/d est < 0.5 on s'arrête là
 			if (s/d)<Tree.teta:
-				#print("S/D < TETA")
-				return self.calcA(node,Tree.G*self.m/d**2,d)
+				#OPTIMISATION
+				#return self.calcA(node,Tree.G*self.m/d**2,d)
+				return [(self.coord[0]-node.coord[0])*Tree.G*self.m/d/d/d,(self.coord[1]-node.coord[1])*Tree.G*self.m/d/d/d,(self.coord[2]-node.coord[2])*Tree.G*self.m/d/d/d]
 			#parcourir les feuilles et sommer
 			else:
-				#print("AUTRE")
 				for i in range(0,8):
 					if self.leaf[i] is not None:
-						self.addA(a,self.leaf[i].barnesHut(node))
-						#a+=self.leaf[i].barnesHut(node)
+						a2=self.leaf[i].barnesHut(node)
+						a[0]+=a2[0]
+						a[1]+=a2[1]
+						a[2]+=a2[2]
+						# OPTIMISATION
+						# self.addA(a,self.leaf[i].barnesHut(node))
+
 			return a
 		# c'est un noeud final
 		else:
-			return self.calcA(node,Tree.G*self.star.getMass()/d**2,d) #Tree.G*self.star.getMass()/d**2
+			#print("LA MASSE : ",self.star.getMass(),self.m)
+			return [(self.coord[0]-node.coord[0])*Tree.G*self.m/d/d/d,(self.coord[1]-node.coord[1])*Tree.G*self.m/d/d/d,(self.coord[2]-node.coord[2])*Tree.G*self.m/d/d/d]
+			#OPTIMISATION
+			#return [(self.coord[0]-node.coord[0])*Tree.G*self.star.getMass()/d/d/d,(self.coord[1]-node.coord[1])*Tree.G*self.star.getMass()/d/d/d,(self.coord[2]-node.coord[2])*Tree.G*self.star.getMass()/d/d/d]
+			#return self.calcA(node,Tree.G*self.star.getMass()/d**2,d) #Tree.G*self.star.getMass()/d**2
 	
 	def parcoursCalcul(self,n=0):
 		#print("========================== CALCUL =======================================")
 		if self.star is not None:
-			#print("n:",n,"parcoursCalcul asf:",self.star.getV()[0],self.star.getV()[1],self.star.getV()[2])
 			for i in range(0,3):
-				#print("N:",n,"i:",i," Tree.V : ", self.v[i],"Star.V",self.star.getV()[i],self.star.getV())
 				self.v[i]=self.a[i]*Tree.t+self.star.getV()[i]
 				self.coord[i]=self.v[i]*Tree.t+self.coord[i]
-
-				#print(i," Tree.V : ", self.v[i],"Star.V",self.star.getV()[i])
-				#print(n, "a :",self.a, "coord :", self.coord, "vitesse :", self.v)
 			
 			self.star.setV(self.v)
 			self.star.setCoord(self.coord)
-			if n>900:
-				print("========================================================================================0")
-			#print("==========================")
 				
 		for i in range(0,8):
 			if self.leaf[i] is not None:

@@ -9,7 +9,7 @@ import timeit
 # 0.16
 # amelioration distance : 0.12
 # retour calcA remplace par calcul direct : 0.95
-# plus d'appel à addA : 0.85
+# plus d'appel a addA : 0.85
 
 sys.setrecursionlimit(1000)
 gc.enable()

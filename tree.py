@@ -1,5 +1,6 @@
 from math import *
 import timeit
+import numpy
 
 class Tree(object):
 	liste=[]
@@ -80,22 +81,52 @@ class Tree(object):
 		a=[self.min[0],self.min[1],self.min[2]]
 		b=[(self.max[0]-self.min[0])/2.0+self.min[0],(self.max[1]-self.min[1])/2.0+self.min[1],(self.max[2]-self.min[2])/2.0+self.min[2]]
 
-		if f==0:
-			m=[a[0],a[1],a[2]]
-		if f==1:
-			m=[b[0],a[1],a[2]]
-		if f==2:
-			m=[a[0],b[1],a[2]]
-		if f==3:
-			m=[b[0],b[1],a[2]]
-		if f==4:
-			m=[a[0],a[1],b[2]]
-		if f==5:
-			m=[b[0],a[1],b[2]]
-		if f==6:
-			m=[a[0],b[1],b[2]]
-		if f==7:
-			m=[b[0],b[1],b[2]]
+		def f0():
+			return [a[0],a[1],a[2]]
+		def f1():
+			return [b[0],a[1],a[2]]
+		def f2():
+			return [a[0],b[1],a[2]]
+		def f3():
+			return [b[0],b[1],a[2]]
+		def f4():
+			return [a[0],a[1],b[2]]
+		def f5():
+			return [b[0],a[1],b[2]]
+		def f6():
+			return [a[0],b[1],b[2]]
+		def f7():
+			return [b[0],b[1],b[2]]
+
+		# map the inputs to the function blocks
+		options = {0 : f0,
+				   1 : f1,
+				   2 : f2,
+				   3 : f3,
+				   4 : f4,
+				   5 : f5,
+				   6 : f6,
+				   7 : f7,
+		}
+
+		m=options[f]()
+		#OPTIMISATION
+		# if f==0:
+			# m=[a[0],a[1],a[2]]
+		# if f==1:
+			# m=[b[0],a[1],a[2]]
+		# if f==2:
+			# m=[a[0],b[1],a[2]]
+		# if f==3:
+			# m=[b[0],b[1],a[2]]
+		# if f==4:
+			# m=[a[0],a[1],b[2]]
+		# if f==5:
+			# m=[b[0],a[1],b[2]]
+		# if f==6:
+			# m=[a[0],b[1],b[2]]
+		# if f==7:
+			# m=[b[0],b[1],b[2]]
 		##print("f : ",f," min : ",m, " a : ", a, " b : ", b)
 		return m
 	
@@ -105,22 +136,53 @@ class Tree(object):
 		a=[(self.max[0]-self.min[0])/2.0+self.min[0],(self.max[1]-self.min[1])/2.0+self.min[1],(self.max[2]-self.min[2])/2.0+self.min[2]]
 		b=[self.max[0],self.max[1],self.max[2]]
 		
-		if f==0:
-			m=[a[0],a[1],a[2]]
-		if f==1:
-			m=[b[0],a[1],a[2]]
-		if f==2:
-			m=[a[0],b[1],a[2]]
-		if f==3:
-			m=[b[0],b[1],a[2]]
-		if f==4:
-			m=[a[0],a[1],b[2]]
-		if f==5:
-			m=[b[0],a[1],b[2]]
-		if f==6:
-			m=[a[0],b[1],b[2]]
-		if f==7:
-			m=[b[0],b[1],b[2]]
+		def f0():
+			return [a[0],a[1],a[2]]
+		def f1():
+			return [b[0],a[1],a[2]]
+		def f2():
+			return [a[0],b[1],a[2]]
+		def f3():
+			return [b[0],b[1],a[2]]
+		def f4():
+			return [a[0],a[1],b[2]]
+		def f5():
+			return [b[0],a[1],b[2]]
+		def f6():
+			return [a[0],b[1],b[2]]
+		def f7():
+			return [b[0],b[1],b[2]]
+
+		# map the inputs to the function blocks
+		options = {0 : f0,
+				   1 : f1,
+				   2 : f2,
+				   3 : f3,
+				   4 : f4,
+				   5 : f5,
+				   6 : f6,
+				   7 : f7,
+		}
+
+		m=options[f]()
+		
+		#OPTIMISATION
+		# if f==0:
+			# m=[a[0],a[1],a[2]]
+		# if f==1:
+			# m=[b[0],a[1],a[2]]
+		# if f==2:
+			# m=[a[0],b[1],a[2]]
+		# if f==3:
+			# m=[b[0],b[1],a[2]]
+		# if f==4:
+			# m=[a[0],a[1],b[2]]
+		# if f==5:
+			# m=[b[0],a[1],b[2]]
+		# if f==6:
+			# m=[a[0],b[1],b[2]]
+		# if f==7:
+			# m=[b[0],b[1],b[2]]
 			
 		##print("f : ",f," max : ",m, " a : ", a, " b : ", b)
 		return m
@@ -134,19 +196,6 @@ class Tree(object):
 		x2=self.coord[0]
 		y2=self.coord[1]
 		z2=self.coord[2]
-		
-		d=sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
-		# if d<0.001:
-			# print("==========================================================")
-			# print("DISTANCE :",d)
-			# print("==========================================================")
-		
-		# if x1>900 or x2>900 or y1>900 or y2>900 or z1>900 or z2>900:
-			# print("==========================================================")
-			# print("DISTANCE :",d)
-			# print("==========================================================")
-		#print("NODE : ",node,node.coord,node.star)
-		#print("SELF : ",self,self.coord,self.star)
 		
 		return sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
 	
@@ -171,19 +220,12 @@ class Tree(object):
 	
 	def parcoursBH(self):
 		if self.star is not None:
-		
 			a=self.rootTree.barnesHut(self)
 			self.a[0]+=a[0]
 			self.a[1]+=a[1]
 			self.a[2]+=a[2]
-		
+			#OPTIMISATION
 			#self.addA(self.rootTree.barnesHut(self))
-			
-			#self.a=
-			#if self==self.rootTree:
-				#print("BONJOUR :",self.a)
-			#else:
-				#print("AUREVOIR :",self.a)
 		else:
 			#print("et oui")
 			for i in range(0,8):
@@ -196,7 +238,7 @@ class Tree(object):
 		# c'est le même noeud donc pas de calcul de force
 		if self==node:
 			return a
-			
+		
 		d=sqrt((node.coord[0]-self.coord[0])**2+(node.coord[1]-self.coord[1])**2+(node.coord[2]-self.coord[2])**2)
 		#OPTIMISATION
 		#d=self.distance(node)
@@ -230,7 +272,6 @@ class Tree(object):
 			#return self.calcA(node,Tree.G*self.star.getMass()/d**2,d) #Tree.G*self.star.getMass()/d**2
 	
 	def parcoursCalcul(self,n=0):
-		#print("========================== CALCUL =======================================")
 		if self.star is not None:
 			for i in range(0,3):
 				self.v[i]=self.a[i]*Tree.t+self.star.getV()[i]
@@ -253,13 +294,11 @@ class Tree(object):
 				self.leaf[i].parcours(n+1)
 				
 	def addStar(self,s):
-		#print("========================== DEBUT =======================================")
 		#si l'arbre est vide la racine prend les coordonnées et la masse de la première star
 		if self.m==0:
 			self.m=s.getMass()
 			for i in range(0,3):
 				self.coord[i]=s.getCoord()[i]
-			#print("première :",self.coord,self.m)
 		#sinon la masse est ajoutée et le nouveau centre de gravité est calculé
 		else:
 			for i in range(0,3):
@@ -300,7 +339,6 @@ class Tree(object):
 					self.leaf[currentStarF]=t
 				else:
 					#print("|2|")
-					#Tree.liste.remove(Tree.liste[-1])
 					self.leaf[currentStarF].addStar(self.star)
 				self.star=None
 				Tree.liste.pop(-1)
@@ -314,6 +352,3 @@ class Tree(object):
 			else:
 				#print("|4|")
 				self.leaf[newStarF].addStar(s)
-				
-		#print("adresse coord :",id(self.coord))
-		#print("========================== FIN =======================================")

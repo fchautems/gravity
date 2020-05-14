@@ -25,3 +25,9 @@ class Star(object):
 		for i in range(0,3):
 			self.v[i]=v[i]
 			#print("Star.setV ",self.v[i])
+
+	def kill(self):
+		del self.p
+		del self.v
+		del self.m
+		gc.collect()

@@ -1,12 +1,13 @@
 from math import *
 import timeit
 import numpy
+import gc
 
 class Tree(object):
 	liste=[]
 	teta=0.5
-	G=0.015
-	t=0.05
+	G=0.04
+	t=0.5
 	
 	def __init__(self, s=None,min=[-500.0,-500.0,-500.0],max=[500.0,500.0,500.0],root=False,rootTree=None):
 		self.root=root
@@ -35,7 +36,6 @@ class Tree(object):
 			self.m=s.getMass()
 			for i in range(0,3):
 				self.coord[i]=s.getCoord()[i]
-			#print("initialisation coordonnées : ",s.getCoord())
 		else:
 			self.m=0
 			self.coord=[.0,.0,.0]
@@ -54,7 +54,9 @@ class Tree(object):
 		del self.a
 		del self.v
 		del self.coord
+		#gc.collect()
 		#del self.star
+		
 		vide=True
 		for i in range(0,8):
 			if self.leaf[i] is not None:
@@ -62,6 +64,7 @@ class Tree(object):
 				self.leaf[i].kill()
 		if vide:
 			del self.leaf
+		del self
 	
 	# retourne le cadre dans lequel se trouve une étoile	
 	def frameNumber(self,s=None):
@@ -224,6 +227,7 @@ class Tree(object):
 			self.a[0]+=a[0]
 			self.a[1]+=a[1]
 			self.a[2]+=a[2]
+			del a
 			#OPTIMISATION
 			#self.addA(self.rootTree.barnesHut(self))
 		else:
@@ -270,6 +274,7 @@ class Tree(object):
 			#OPTIMISATION
 			#return [(self.coord[0]-node.coord[0])*Tree.G*self.star.getMass()/d/d/d,(self.coord[1]-node.coord[1])*Tree.G*self.star.getMass()/d/d/d,(self.coord[2]-node.coord[2])*Tree.G*self.star.getMass()/d/d/d]
 			#return self.calcA(node,Tree.G*self.star.getMass()/d**2,d) #Tree.G*self.star.getMass()/d**2
+		print("BH",dir())
 	
 	def parcoursCalcul(self,n=0):
 		if self.star is not None:
@@ -283,6 +288,10 @@ class Tree(object):
 		for i in range(0,8):
 			if self.leaf[i] is not None:
 				self.leaf[i].parcoursCalcul(n+1)
+		
+		del i
+		del n
+		#print("PARCOURSSSS",dir())
 				
 	def parcours(self,n=0):
 		print("parcours")
@@ -302,8 +311,6 @@ class Tree(object):
 		#sinon la masse est ajoutée et le nouveau centre de gravité est calculé
 		else:
 			for i in range(0,3):
-				#print("barycentre : ",(s.getCoord()[i]*s.getMass()+self.coord[i]*self.m)/(s.getMass()+self.m))
-				#print(s.getCoord()[i],s.getMass(),self.coord[i],self.m,s.getMass(),self.m)
 				#print("fin barycentre")
 				self.coord[i]=(s.getCoord()[i]*s.getMass()+self.coord[i]*self.m)/(s.getMass()+self.m)
 			self.m+=s.getMass()
@@ -323,6 +330,7 @@ class Tree(object):
 			else:
 				#print("déjà une étoile")
 				self.leaf[newStarF].addStar(s)
+			#gc.collect()
 		else:
 			#print("c'est pas la racine")
 			#print("m : ",self.m,"coord : ",self.coord)
@@ -340,8 +348,13 @@ class Tree(object):
 				else:
 					#print("|2|")
 					self.leaf[currentStarF].addStar(self.star)
+					
+				#self.star.kill()
+				#del self.star
 				self.star=None
 				Tree.liste.pop(-1)
+				#tx.kill()
+				del currentStarF
 				
 			#print(" n : ",newStarF)
 			if self.leaf[newStarF] is None:
@@ -352,3 +365,8 @@ class Tree(object):
 			else:
 				#print("|4|")
 				self.leaf[newStarF].addStar(s)
+				
+		del newStarF
+		del i
+		
+		#print("KILL BILL",dir())

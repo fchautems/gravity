@@ -1,6 +1,6 @@
 from math import *
 import timeit
-import numpy
+#import numpy
 
 class Tree(object):
 	liste=[]

@@ -9,10 +9,34 @@ import sys
 #a=marshal.load(open("camera.txt", "rb")) ## Rechargement du dictionnaire
 #print(a)
 #sys.exit()
-	
-app = Ursina()
 
+def bright(x):
+	if x<-5:
+		return 1
+		print("ca arrive")
+	if x>10:
+		print("la aussi")
+		return 0.1
+	a=0.004
+	b=0.04
+	c=0.2
+	return a*x**2+b*x+c
+	
 thread=GravityT()
+thread.__init__()
+
+circles=[]
+
+s=0.02
+
+b=True
+while b:
+	a=thread.getListCoord()
+	if a is not None:
+		b=False
+
+
+app = Ursina()
 
 window.title = 'My Game'				# The window title
 window.borderless = False			   # Show a border
@@ -56,6 +80,18 @@ def update():
 	if cpt==0:
 		thread.start()
 	cpt+=1
+	
+	
+	for i in a:
+		newcircle = Entity(model='circle', color=Color(1,1,1,1), position=(i[0], i[1], i[2]), scale=(s,s,s))
+		circles.append(newcircle)
+	
+	# # affichage des cercles
+	# for j in range (0,n):
+		# self.circles[j].position=(self.listStar[j].getCoord()[0],self.listStar[j].getCoord()[1],self.listStar[j].getCoord()[2])
+		# self.circles[j].color=Color(1*bright(self.listStar[j].getCoord()[2]),1*bright(self.listStar[j].getCoord()[2]),1*bright(self.listStar[j].getCoord()[2]),1)
+
+	
 	#thread.stop()
 				
 app.run()

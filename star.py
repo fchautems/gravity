@@ -16,6 +16,11 @@ class Star(object):
     def getV(self):
         return self.v
 
+    def getV_val(self,v):
+        v[0] = self.v[0]
+        v[1] = self.v[1]
+        v[2] = self.v[2]
+
     def setCoord(self, p):
         for i in range(0, 3):
             self.p[i] = p[i]
@@ -28,7 +33,7 @@ class Star(object):
 
     def mulV(self, x):
         for i in range(0, 3):
-            self.v[i] = v[i]*x
+            self.v[i] = self.v[i]*x
 
     def addV(self, v):
         for i in range(0, 3):

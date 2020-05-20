@@ -4,9 +4,9 @@ import timeit
 
 class Tree(object):
 	liste=[]
-	teta=0.5
+	teta=0.6
 	G=0.015
-	t=0.05
+	t=0.1
 	
 	def __init__(self, s=None,min=[-500.0,-500.0,-500.0],max=[500.0,500.0,500.0],root=False,rootTree=None):
 		self.root=root

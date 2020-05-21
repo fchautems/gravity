@@ -242,11 +242,14 @@ class Tree(object):
 		d=sqrt((node.coord[0]-self.coord[0])**2+(node.coord[1]-self.coord[1])**2+(node.coord[2]-self.coord[2])**2)
 		#OPTIMISATION
 		#d=self.distance(node)
+		if d==0.0:
+			return a
 		
 		# ce n'est pas un noeuf final
 		if self.star is None:
 			s=(self.max[0]-self.min[0])
 			# le rapport s/d est < 0.5 on s'arrête là
+			print(s,d)
 			if (s/d)<Tree.teta:
 				#OPTIMISATION
 				#return self.calcA(node,Tree.G*self.m/d**2,d)

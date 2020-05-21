@@ -22,7 +22,7 @@ max = 15
 sizeC = 30
 
 listStar: [Star] = []
-n = 4
+n = 100
 s = 0.02
 
 a = [0.0, 0.0, 0.0]
@@ -120,8 +120,8 @@ for i in range(0, n):
     sz += z
     vx = 0 #random.uniform(-0.03, 0.03)
     vy = 0 #random.uniform(-0.03, 0.03)
-    vz = 0 #random.uniform(-0.03, 0.03)
-    m = random.uniform(0.5, 0.5)
+    vz = 0 # random.uniform(-0.03, 0.03)
+    m = random.uniform(0.1, 2.5)
     listStar.append(Star(x, y, z, vx, vy, vz, m))
     t.addStar(listStar[i])
     newcircle = Entity(model='circle', color=color.white, position=(x, y, z), scale=(s, s, s))
@@ -154,24 +154,24 @@ def update():
         # print("BONjour")
         l = []
         c = []
-        print("1")
+        #print("1",n)
         starttime = timeit.default_timer()
         # print("The start time is :",starttime)
         t.parcoursBH()
         # print("Temps de parcoursBH :", timeit.default_timer() - starttime)
-        print("2")
+        #print("2")
         starttime = timeit.default_timer()
         # print("The start time is :",starttime)
         t.parcoursCalcul()
         # print("Temps de parcoursCalcul :", timeit.default_timer() - starttime)
-        print("3")
+        #print("3")
         starttime = timeit.default_timer()
         for j in range(0, n):
             # print(j)
             circles[j].position = (listStar[j].getCoord()[0], listStar[j].getCoord()[1], listStar[j].getCoord()[2])
         # print("Temps d'affichage des cercle is :", timeit.default_timer() - starttime)
 
-        print("4")
+        #print("4")
         starttime = timeit.default_timer()
         delete = False
         for j in range(0, n):
@@ -183,7 +183,7 @@ def update():
             else:
                 delete = True
                 n = n - 1
-        print("5")
+        #print("5")
         # print("Temps suppression :", timeit.default_timer() - starttime)
         if delete:
             print("remove", n)
@@ -193,7 +193,7 @@ def update():
         # del c
         l1 = []
         c1 = []
-        print("6")
+        #print("6")
         #print("1:",circles[0].get_position(), l[0].getV(),l[0].getMass(),listStar[0].getV(),listStar[0].getMass())
         starttime = timeit.default_timer()
         for j in range(0, n):
@@ -202,18 +202,18 @@ def update():
             v=[0,0,0]
             l[j].getV_val(v)
             #print(l[j].getV())
-            v[0] = v[0] * m
-            v[1] = v[1] * m
-            v[2] = v[2] * m
+            v[0] = v[0] * l[j].getMass()
+            v[1] = v[1] * l[j].getMass()
+            v[2] = v[2] * l[j].getMass()
             #print(l[j].getV())
             #sys.exit()
             for k in range(j + 1, n):
                 d = dist(l[j], l[k])
-                if d < 0.1:
+                if d < 0.2:
                     # print("masse:", m, "vitesse:", v, "distance:", d)
                     # print("##############################################3FUSION################################3")
                     mk = l[k].getMass()
-                    vk = l[j].getV()
+                    vk = l[k].getV()
                     v[0] += vk[0] * mk
                     v[1] += vk[1] * mk
                     v[2] += vk[2] * mk
@@ -232,6 +232,7 @@ def update():
                 # print("salut")
                 print("FUSION")
                 #print(l[j].getMass(),l[j].getV(),l[j].getCoord())
+                c[k].visible=False
 
             if l[j].exists():
                 # print("if exists")
@@ -260,8 +261,9 @@ def update():
         starttime = timeit.default_timer()
         for j in range(0, n):
             t.addStar(listStar[j])
+            #print("longueur :",len(listStar),len(circles))
         # print("Temps de création du nouvel arbre :", timeit.default_timer() - starttime)
-        print("voila")
+        #print("voila")
     except Exception as e:
         # t=Tree(root=True)
         # for j in range(0, n):

@@ -4,14 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gravity-simulator"
-version = "0.2.0.dev0"
+version = "0.3.0.dev0"
 description = "Interactive 3D N-body gravity simulator"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "glcontext==3.0.0",
+    "glfw==2.10.2",
+    "imgui-bundle==1.92.801",
     "llvmlite==0.48.0",
+    "moderngl==5.12.0",
     "numba==0.66.0",
     "numpy==2.4.6",
+    "PyOpenGL==3.1.10",
+    "PyOpenGL-accelerate==3.1.10",
 ]
 
 [project.optional-dependencies]
@@ -66,5 +72,13 @@ strict = true
 files = ["src/gravity", "tools/bootstrap.py"]
 
 [[tool.mypy.overrides]]
-module = ["numba", "numba.*"]
+module = [
+    "glfw",
+    "imgui_bundle.python_backends.*",
+    "moderngl",
+    "numba",
+    "numba.*",
+    "OpenGL",
+    "OpenGL.*",
+]
 ignore_missing_imports = true

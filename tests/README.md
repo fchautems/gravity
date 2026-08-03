@@ -14,3 +14,8 @@ Deterministic correctness tests run in the ordinary test command. Hardware and
 long-running tests use explicit markers. See `docs/SPECIFICATION.md` and
 `docs/ARCHITECTURE.md` for thresholds and release policy.
 
+At step 3 the ordinary suite covers the orbit-camera matrices and bounds, UI
+input capture, deterministic contiguous particle generation, a mocked single
+GPU draw, window ownership, graphics-loop cleanup, runtime imports, launchers,
+and diagnostics. The real GLFW/OpenGL window is intentionally validated on the
+reference Windows PC with `docs/GRAPHICS_VALIDATION.md`.

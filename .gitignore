@@ -25,9 +25,9 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+imgui.ini
 
 # Local data and profiling output
 *.csv
 *.prof
 *.log
-

@@ -1,7 +1,7 @@
-# Installation de Gravity sous Windows
+# Installation et premier rendu 3D de Gravity sous Windows
 
-Ce guide couvre le jalon 2. Il valide l'installation et le calcul compile, mais
-la galaxie 3D apparaitra au jalon 3.
+Ce guide couvre le jalon 3. Il installe le calcul compile et la pile graphique,
+puis ouvre le premier nuage galactique 3D.
 
 ## Prerequis
 
@@ -20,8 +20,11 @@ ZIP.
 2. Attendez le message `Installation terminee avec succes` puis appuyez sur une
    touche pour fermer la fenetre.
 3. Double-cliquez sur `LANCER_GRAVITY.bat`.
-4. Une petite fenetre Windows confirme que Python, NumPy et la compilation Numba
-   fonctionnent. C'est le resultat visuel attendu pour le jalon 2.
+4. La fenetre `Gravity - Galaxie 3D` doit s'ouvrir avec 10 000 particules et un
+   panneau de reglages a droite.
+
+Apres une mise a jour depuis le jalon 2, relancez `INSTALLER.bat` une fois. Il
+reutilise l'environnement existant et ajoute les paquets graphiques verrouilles.
 
 L'installateur cree `.venv` dans le dossier du projet. Il ne modifie pas les
 autres environnements Python de l'ordinateur.
@@ -35,6 +38,10 @@ Double-cliquez sur `TESTER_GRAVITY.bat`. Il execute successivement :
 - le controle de types Mypy;
 - les tests Pytest et leur couverture;
 - la verification de coherence des paquets installes.
+
+Les tests sans materiel verifient aussi la camera, les gestes de souris, la
+generation des 10 000 points, le contrat d'un seul appel GPU, les shaders, les
+statistiques d'image et l'ordre de fermeture des ressources.
 
 La fenetre reste ouverte a la fin pour permettre de lire le resultat.
 
@@ -70,6 +77,16 @@ Python 3.12 valide est reutilise.
 ### Le lancement ne montre rien
 
 Executez `TESTER_GRAVITY.bat`. Si un controle echoue, le journal indique la
-cause. Si tous les controles reussissent, le test specifique du jalon 3 sera la
-creation de la vraie fenetre OpenGL sur le PC cible.
+cause. Si tous les controles reussissent, mettez a jour le pilote NVIDIA puis
+relancez Gravity. Le journal contient la version OpenGL et le nom du GPU lorsque
+la creation de la fenetre a reussi.
 
+### La fenetre s'ouvre, mais l'image est vide ou lente
+
+- mettez le pilote NVIDIA a jour depuis le site NVIDIA;
+- verifiez que Gravity utilise bien la GTX 1070 dans les parametres graphiques
+  de Windows;
+- essayez de reduire `Taille des etoiles` pour distinguer un probleme de rendu
+  d'un simple effet trop lumineux;
+- consultez la [checklist graphique](GRAPHICS_VALIDATION.md) et transmettez le
+  journal si le probleme persiste.

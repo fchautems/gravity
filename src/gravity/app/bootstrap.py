@@ -10,11 +10,13 @@ from collections.abc import Sequence
 
 from gravity import __version__
 from gravity.app.user_feedback import show_message
+from gravity.core.errors import ApplicationStartupError
 from gravity.diagnostics import configure_logging, run_runtime_checks
 
 EXIT_SUCCESS = 0
 EXIT_UNEXPECTED_ERROR = 1
 EXIT_INCOMPATIBLE_RUNTIME = 2
+EXIT_APPLICATION_ERROR = 3
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -47,6 +49,14 @@ def _log_report(logger: logging.Logger, report_lines: Sequence[str]) -> None:
         logger.info("Runtime check: %s", line)
 
 
+def _run_application(logger: logging.Logger) -> None:
+    """Import graphics only after the non-graphical startup checks have passed."""
+
+    from gravity.app.graphics_app import run_graphics_app
+
+    run_graphics_app(logger)
+
+
 def main(arguments: Sequence[str] | None = None) -> int:
     """Validate startup, then hand over to the current application milestone."""
 
@@ -75,16 +85,20 @@ def main(arguments: Sequence[str] | None = None) -> int:
         if options.diagnostic:
             return EXIT_SUCCESS
 
-        message = (
-            "L'installation de Gravity est valide.\n\n"
-            "Le socle Python et le calcul compile Numba fonctionnent. "
-            "La fenetre 3D sera ajoutee a l'etape 3."
-        )
-        if options.no_dialog:
-            print(message)
-        else:
-            show_message("Gravity", message)
+        _run_application(logger)
         return EXIT_SUCCESS
+    except ApplicationStartupError as error:
+        logger.exception("Application startup failure")
+        message = (
+            "Gravity ne peut pas ouvrir la fenetre 3D.\n\n"
+            f"{error}\n\n"
+            f"Le diagnostic a ete enregistre dans :\n{log_path}"
+        )
+        if not options.no_dialog:
+            show_message("Gravity - erreur graphique", message, error=True)
+        else:
+            print(message, file=sys.stderr)
+        return EXIT_APPLICATION_ERROR
     except Exception:  # noqa: BLE001 - final application exception boundary
         logger.exception("Unexpected startup failure")
         message = (

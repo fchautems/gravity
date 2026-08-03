@@ -1,4 +1,4 @@
-"""Non-graphical startup checks for the pinned step-2 runtime."""
+"""Non-graphical startup checks for the pinned numerical and graphics runtime."""
 
 from __future__ import annotations
 
@@ -15,9 +15,15 @@ from gravity.core.paths import ensure_user_directories
 
 SUPPORTED_PYTHON = (3, 12)
 EXPECTED_PACKAGES = {
+    "glcontext": "3.0.0",
+    "glfw": "2.10.2",
+    "imgui-bundle": "1.92.801",
     "llvmlite": "0.48.0",
+    "moderngl": "5.12.0",
     "numba": "0.66.0",
     "numpy": "2.4.6",
+    "PyOpenGL": "3.1.10",
+    "PyOpenGL-accelerate": "3.1.10",
 }
 
 
@@ -100,8 +106,26 @@ def _run_numba_smoke() -> CheckResult:
     return CheckResult("Compilation Numba", True, "calcul natif valide")
 
 
+def _run_graphics_import_smoke() -> CheckResult:
+    """Import the complete graphics integration without opening a display."""
+
+    try:
+        import glfw  # noqa: F401
+        import moderngl  # noqa: F401
+        import OpenGL.GL  # noqa: F401
+        from imgui_bundle import imgui  # noqa: F401
+        from imgui_bundle.python_backends.glfw_backend import GlfwRenderer  # noqa: F401
+    except Exception as error:  # noqa: BLE001 - diagnostic boundary by design
+        return CheckResult(
+            "Pile graphique",
+            False,
+            f"{type(error).__name__}: {error}",
+        )
+    return CheckResult("Pile graphique", True, "imports GLFW / ModernGL / ImGui valides")
+
+
 def run_runtime_checks(*, run_jit: bool = True) -> CompatibilityReport:
-    """Validate Python, architecture, pinned numeric packages, and Numba JIT."""
+    """Validate Python, architecture, pinned packages, graphics imports, and JIT."""
 
     python_version = platform.python_version()
     python_ok = sys.version_info[:2] == SUPPORTED_PYTHON
@@ -121,6 +145,7 @@ def run_runtime_checks(*, run_jit: bool = True) -> CompatibilityReport:
         ),
     ]
     checks.extend(_package_check(name, version) for name, version in EXPECTED_PACKAGES.items())
+    checks.append(_run_graphics_import_smoke())
     if run_jit:
         checks.append(_run_numba_smoke())
 

@@ -10,8 +10,8 @@ earlier one.
 |---:|---|---|---|
 | 1 | V1 specification and architecture | Scope, budgets, module boundaries, numerical model, and test strategy are recorded; source package skeleton exists. | **Complete** |
 | 2 | Reproducible setup and double-click launchers | Clean Windows setup, launch, and test smoke path work without a typed command; failures produce useful output. | **Complete** |
-| 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | Next |
-| 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | Planned |
+| 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | **Ready for Windows validation** |
+| 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | Next after validation |
 | 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | Planned |
 | 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | Planned |
 | 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | Planned |
@@ -51,6 +51,28 @@ Step 2 establishes the first executable and testable project boundary:
 The graphics packages remain outside the step-2 lock on purpose. They are
 pinned only after the integrated GLFW / ModernGL / Dear ImGui Bundle smoke gate
 at the beginning of step 3.
+
+## Step 3 output
+
+Step 3 replaces the milestone dialog with the first real application window:
+
+- GLFW creates a resizable OpenGL 3.3 core window with DPI-aware sizing;
+- ModernGL renders one interleaved NumPy buffer containing 10,000 synthetic
+  particles in exactly one base draw call;
+- the shaders animate a clearly labelled visual-only galaxy cloud and render
+  soft circular point sprites;
+- a tested orbit camera supports left-drag orbit, right/middle-drag pan, wheel
+  zoom, and reset;
+- Dear ImGui provides a restrained French panel, pause/restart controls, live
+  sizing, GPU information, FPS, and render-time medians;
+- camera input is latched outside UI widgets so sliders never move the view;
+- shutdown releases particle, UI, context, and GLFW resources in ownership
+  order.
+
+The complete non-hardware suite contains 54 tests at this gate. Shader and
+window creation still require the short native Windows check in
+`GRAPHICS_VALIDATION.md`; a headless container cannot prove the target driver's
+OpenGL context or DPI behaviour.
 
 ## Validation cadence
 

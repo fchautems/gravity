@@ -1,6 +1,6 @@
 # ADR 0002: GLFW, ModernGL, and Dear ImGui Bundle
 
-- Status: Accepted, subject to the step-3 compatibility gate
+- Status: Accepted; package gate passed, reference-PC validation pending
 - Date: 2026-08-03
 
 ## Context
@@ -22,8 +22,17 @@ controls directly in OpenGL would waste substantial effort.
 - The particle field is a contiguous buffer rendered with one base draw call.
 - Graphics remain on the main thread.
 
-The exact package versions are pinned after the integrated compatibility smoke
-test, not guessed in this ADR.
+The integrated package gate selected:
+
+- GLFW Python 2.10.2;
+- ModernGL 5.12.0 with glcontext 3.0.0;
+- Dear ImGui Bundle 1.92.801;
+- PyOpenGL and PyOpenGL-accelerate 3.1.10 for the maintained pure-Python ImGui
+  renderer backend only.
+
+All provide CPython 3.12 Windows x86-64 wheels. Imports, lifecycle contracts,
+the single-draw renderer, camera, and input capture are automated. Native
+OpenGL context, driver, DPI, and visual feel remain the reference-PC gate.
 
 ## Consequences
 
@@ -48,4 +57,3 @@ combination. Physics, scenario, snapshot, and rendering contracts do not change.
 - A browser/WebGL V1: complicates local Python-worker integration and packaging.
 - PySide6 + embedded ModernGL: polished widgets, but an unnecessary context
   integration layer for the first simulator build.
-

@@ -10,24 +10,36 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 2 complete: the Windows setup, launch, and test paths are reproducible.**
+**Step 3 implemented: the first 3D graphics shell is ready for validation on the
+reference Windows PC.**
 
-The numerical and graphics engines are not implemented yet. The current
-launcher verifies the pinned Python/Numba foundation and displays a native
-status message. Step 3 replaces that milestone message with the first 3D window,
-camera, controls, and batched particle renderer.
+`LANCER_GRAVITY.bat` now opens a styled, resizable 3D window with a smooth orbit
+camera, a French control panel, live frame metrics, and 10,000 synthetic
+particles submitted in one GPU draw. The visual rotation is deliberately
+artificial: the exact gravitational solver begins in step 4.
 
 ## Windows quick start
 
 1. Install 64-bit Python 3.12 from [python.org](https://www.python.org/downloads/).
 2. Double-click `INSTALLER.bat` once.
-3. Double-click `LANCER_GRAVITY.bat` to validate the installed application entrypoint.
+3. Double-click `LANCER_GRAVITY.bat` to open the 3D application.
 4. Double-click `TESTER_GRAVITY.bat` whenever you want the complete automated check.
 
 No command needs to be typed. The environment lives in `.venv` beside the
 project and logs live in `%LOCALAPPDATA%\Gravity\logs`. See the
 [Windows installation guide](docs/INSTALLATION.md) for the exact first test and
 troubleshooting path.
+
+## First graphics test
+
+- drag with the left mouse button to orbit;
+- drag with the right or middle button to pan;
+- use the wheel to zoom;
+- use `Pause`, `Recommencer`, and `Recentrer la vue` in the right panel;
+- resize and maximize the window while watching the FPS overlay.
+
+The short [step-3 validation checklist](docs/GRAPHICS_VALIDATION.md) records the
+expected result and the useful information to report if a graphics driver fails.
 
 ## V1 commitments
 
@@ -79,9 +91,11 @@ src/gravity/
 └── ui/           # User controls and input mapping
 ```
 
-The packages now include the startup boundary, local diagnostics, and the
-compiled Numba compatibility smoke test. Simulation implementations arrive in
-the roadmap step where they can be tested meaningfully.
+The packages now include the startup boundary, local diagnostics, the compiled
+Numba compatibility smoke test, the orbit camera, input routing, deterministic
+synthetic field, ModernGL renderer, and Dear ImGui shell. Simulation
+implementations arrive in the roadmap step where they can be tested
+meaningfully.
 
 ## Historical version
 

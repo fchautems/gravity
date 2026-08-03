@@ -18,7 +18,7 @@ from typing import TextIO
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VIRTUAL_ENVIRONMENT = PROJECT_ROOT / ".venv"
-LOCK_FILE = PROJECT_ROOT / "requirements" / "step2.lock"
+LOCK_FILE = PROJECT_ROOT / "requirements" / "step3.lock"
 SUPPORTED_PYTHON = (3, 12)
 PIP_VERSION = "26.2"
 SETUPTOOLS_VERSION = "83.0.0"
@@ -278,7 +278,7 @@ def install(log_file: TextIO) -> None:
 
 
 def run_quality_checks(log_file: TextIO) -> None:
-    """Run the complete non-graphical step-2 verification suite."""
+    """Run the complete automated verification suite for the current milestone."""
 
     python_path = _venv_python()
     info = _inspect_interpreter(python_path)
@@ -304,7 +304,7 @@ def run_quality_checks(log_file: TextIO) -> None:
     )
     for command in commands:
         _run_command(command, log_file, environment=environment)
-    _emit("Tous les controles de l'etape 2 ont reussi.", log_file)
+    _emit("Tous les controles automatises ont reussi.", log_file)
 
 
 def _parser() -> argparse.ArgumentParser:

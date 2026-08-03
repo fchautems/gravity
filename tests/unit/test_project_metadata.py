@@ -14,8 +14,12 @@ def test_package_and_project_versions_match() -> None:
     assert metadata["project"]["requires-python"] == ">=3.12,<3.13"
 
 
-def test_runtime_lock_contains_the_accepted_numeric_versions() -> None:
-    lock = (PROJECT_ROOT / "requirements" / "step2.lock").read_text(encoding="utf-8")
+def test_runtime_lock_contains_the_accepted_numeric_and_graphics_versions() -> None:
+    lock = (PROJECT_ROOT / "requirements" / "step3.lock").read_text(encoding="utf-8")
     assert "numpy==2.4.6" in lock
     assert "numba==0.66.0" in lock
     assert "llvmlite==0.48.0" in lock
+    assert "moderngl==5.12.0" in lock
+    assert "glfw==2.10.2" in lock
+    assert "imgui-bundle==1.92.801" in lock
+    assert "PyOpenGL==3.1.10" in lock

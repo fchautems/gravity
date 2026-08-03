@@ -6,10 +6,12 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
 
 # Virtual environments
 .venv/
+.venv-incompatible-*/
 venv/
 env/
 
@@ -28,3 +30,4 @@ Thumbs.db
 *.csv
 *.prof
 *.log
+

@@ -10,11 +10,24 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 1 complete: V1 scope and architecture are defined.**
+**Step 2 complete: the Windows setup, launch, and test paths are reproducible.**
 
-There is deliberately no runnable application on this branch yet. Step 2 will
-add the reproducible Python environment, one-click Windows installer/launcher,
-test launcher, and startup diagnostics.
+The numerical and graphics engines are not implemented yet. The current
+launcher verifies the pinned Python/Numba foundation and displays a native
+status message. Step 3 replaces that milestone message with the first 3D window,
+camera, controls, and batched particle renderer.
+
+## Windows quick start
+
+1. Install 64-bit Python 3.12 from [python.org](https://www.python.org/downloads/).
+2. Double-click `INSTALLER.bat` once.
+3. Double-click `LANCER_GRAVITY.bat` to validate the installed application entrypoint.
+4. Double-click `TESTER_GRAVITY.bat` whenever you want the complete automated check.
+
+No command needs to be typed. The environment lives in `.venv` beside the
+project and logs live in `%LOCALAPPDATA%\Gravity\logs`. See the
+[Windows installation guide](docs/INSTALLATION.md) for the exact first test and
+troubleshooting path.
 
 ## V1 commitments
 
@@ -66,8 +79,9 @@ src/gravity/
 └── ui/           # User controls and input mapping
 ```
 
-The packages currently contain contracts only. Implementations arrive in the
-roadmap step where they can be tested meaningfully.
+The packages now include the startup boundary, local diagnostics, and the
+compiled Numba compatibility smoke test. Simulation implementations arrive in
+the roadmap step where they can be tested meaningfully.
 
 ## Historical version
 
@@ -75,4 +89,3 @@ The original Python/Ursina implementation from 2020 is preserved in the
 [`archive-gravity-2020`](https://github.com/fchautems/gravity/tree/archive-gravity-2020)
 branch. It includes the first Barnes-Hut octree experiments and remains
 available as a reference.
-

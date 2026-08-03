@@ -9,8 +9,8 @@ earlier one.
 | Step | Deliverable | Exit criterion | Status |
 |---:|---|---|---|
 | 1 | V1 specification and architecture | Scope, budgets, module boundaries, numerical model, and test strategy are recorded; source package skeleton exists. | **Complete** |
-| 2 | Reproducible setup and double-click launchers | Clean Windows setup, launch, and test smoke path work without a typed command; failures produce useful output. | Next |
-| 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | Planned |
+| 2 | Reproducible setup and double-click launchers | Clean Windows setup, launch, and test smoke path work without a typed command; failures produce useful output. | **Complete** |
+| 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | Next |
 | 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | Planned |
 | 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | Planned |
 | 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | Planned |
@@ -30,6 +30,27 @@ Step 1 creates no simulation placeholder. Its durable output is:
 - `docs/adr/`: decisions that should not drift silently;
 - `src/gravity/`: package boundaries with no fake implementation;
 - `tests/README.md` and `benchmarks/README.md`: verification rules.
+
+## Step 2 output
+
+Step 2 establishes the first executable and testable project boundary:
+
+- `INSTALLER.bat`: locates 64-bit CPython 3.12 and creates a repository-local
+  `.venv` from the complete step-2 lock;
+- `LANCER_GRAVITY.bat`: starts `pythonw` from the isolated environment without a
+  persistent console;
+- `TESTER_GRAVITY.bat`: runs syntax, lint, typing, tests, coverage, and package
+  consistency checks;
+- `tools/bootstrap.py`: preserves an incompatible old environment, streams
+  useful progress, and records install/test logs;
+- `gravity.diagnostics`: validates exact package versions and executes a real,
+  cached Numba compilation;
+- `gravity.app.bootstrap`: provides the top-level exception boundary and native
+  status/error feedback used before graphics initialization.
+
+The graphics packages remain outside the step-2 lock on purpose. They are
+pinned only after the integrated GLFW / ModernGL / Dear ImGui Bundle smoke gate
+at the beginning of step 3.
 
 ## Validation cadence
 
@@ -71,4 +92,3 @@ New features first enter `SPECIFICATION.md` as either V1 scope or post-V1 scope.
 Changes to an accepted architectural decision require a superseding ADR with
 measurements or a concrete compatibility problem. This keeps the project
 adaptable without letting implementation choices drift from one step to another.
-

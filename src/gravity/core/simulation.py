@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 from gravity.core.experiment import ExperimentConfig
+from gravity.core.observation import ParticleObservations
 
 type RenderPositionArray = npt.NDArray[np.float32]
 
@@ -40,6 +41,7 @@ class SimulationStatus:
     time_scale: float
     physics_seconds: float
     experiment: ExperimentConfig | None = None
+    time_step: float = 0.02
 
     def __post_init__(self) -> None:
         if not isinstance(self.solver_mode, SolverMode):
@@ -60,6 +62,8 @@ class SimulationStatus:
             raise ValueError("time_scale must be finite and positive")
         if self.experiment is not None and not isinstance(self.experiment, ExperimentConfig):
             raise TypeError("experiment must be an ExperimentConfig or None")
+        if not math.isfinite(self.time_step) or self.time_step <= 0.0:
+            raise ValueError("time_step must be finite and positive")
 
     @property
     def experiment_config(self) -> ExperimentConfig:
@@ -73,6 +77,14 @@ class SimulationStatus:
     def physics_ms(self) -> float:
         return self.physics_seconds * 1_000.0
 
+    @property
+    def effective_time_scale(self) -> float:
+        """Upper-bound estimate of the requested speed achieved by live calculation."""
+
+        if self.physics_seconds <= 0.0:
+            return self.time_scale
+        return min(self.time_scale, self.time_step / self.physics_seconds)
+
 
 @dataclass(frozen=True, slots=True)
 class RenderSnapshot:
@@ -80,6 +92,7 @@ class RenderSnapshot:
 
     positions: RenderPositionArray
     status: SimulationStatus
+    observations: ParticleObservations | None = None
 
     def __post_init__(self) -> None:
         positions = self.positions
@@ -94,3 +107,8 @@ class RenderSnapshot:
         if not np.all(np.isfinite(positions)):
             raise ValueError("render positions must contain only finite values")
         positions.setflags(write=False)
+        if self.observations is not None:
+            if not isinstance(self.observations, ParticleObservations):
+                raise TypeError("observations must be ParticleObservations or None")
+            if self.observations.radii.shape != (self.status.particle_count,):
+                raise ValueError("observations and render positions must have the same count")

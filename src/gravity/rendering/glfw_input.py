@@ -2,12 +2,22 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import glfw
 
 from gravity.rendering.camera import OrbitCamera
 from gravity.rendering.input import CameraInputController, MouseButton, MouseFrame
+
+
+@dataclass(frozen=True, slots=True)
+class ShortcutActions:
+    toggle_pause: bool = False
+    reset_camera: bool = False
+    toggle_fullscreen: bool = False
+    leave_fullscreen: bool = False
+    toggle_panel: bool = False
 
 
 class GlfwInputRouter:
@@ -27,6 +37,7 @@ class GlfwInputRouter:
         self._glfw = glfw_module
         self._camera_input = CameraInputController()
         self._scroll_y = 0.0
+        self._pressed_shortcuts: set[int] = set()
 
     def attach(self) -> None:
         self._glfw.set_key_callback(self._window, self._imgui_renderer.keyboard_callback)
@@ -73,4 +84,27 @@ class GlfwInputRouter:
             frame,
             ui_captures_mouse=ui_captures_mouse,
             viewport_height=viewport_height,
+        )
+
+    def poll_shortcuts(self, *, ui_captures_keyboard: bool) -> ShortcutActions:
+        """Return edge-triggered global shortcuts without stealing text-entry keys."""
+
+        keys = (
+            self._glfw.KEY_SPACE,
+            self._glfw.KEY_R,
+            self._glfw.KEY_F,
+            self._glfw.KEY_ESCAPE,
+            self._glfw.KEY_TAB,
+        )
+        down = {key for key in keys if self._glfw.get_key(self._window, key) == self._glfw.PRESS}
+        triggered = down - self._pressed_shortcuts
+        self._pressed_shortcuts = down
+        if ui_captures_keyboard:
+            return ShortcutActions()
+        return ShortcutActions(
+            toggle_pause=self._glfw.KEY_SPACE in triggered,
+            reset_camera=self._glfw.KEY_R in triggered,
+            toggle_fullscreen=self._glfw.KEY_F in triggered,
+            leave_fullscreen=self._glfw.KEY_ESCAPE in triggered,
+            toggle_panel=self._glfw.KEY_TAB in triggered,
         )

@@ -16,7 +16,7 @@ earlier one.
 | 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | **Complete** |
 | 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | **Complete** |
 | 8 | Initial-condition laboratory | Particle count, eight seeded scenarios, repeat/reroll controls, workload guidance, and exact-mode safeguards are usable. | **Complete** |
-| 9 | Observe the physics | Colour modes, ejection state, statistics, centre of mass, and canonical views make the evolution understandable. | Planned |
+| 9 | Observe the physics | Colour modes, ejection state, statistics, centre of mass, and canonical views make the evolution understandable. | **Complete** |
 | 10 | Record and replay | Bounded history, timeline, seeking, frame stepping, and accelerated playback coexist with live simulation. | Planned |
 | 11 | Follow individual particles | Picking, highlight, recent trajectory, trails, and a follow camera remain usable at interactive counts. | Planned |
 | 12 | Optional particle mergers | Spatially accelerated finite-radius detection and momentum-conserving fusion are physically explicit and disableable. | Planned |
@@ -208,6 +208,32 @@ experiment contract:
 The automated suite validates every scenario both statically and through real
 Barnes-Hut/leapfrog advances. See `docs/INITIAL_SCENARIOS.md` for the physical
 meaning and caveats, and `docs/STEP8_VALIDATION.md` for the Windows check.
+
+## Step 9 output
+
+Step 9 adds a linear-time observation layer beside, never inside, the numerical
+solver:
+
+- distance, speed, origin-component, approximate-energy, and ejection colour
+  modes rebuild presentation attributes from immutable worker snapshots;
+- centre of mass, median radius, maximum speed, estimated energy and drift, and
+  linked/ejected counts are available without an additional pairwise pass;
+- an ejection requires all three conditions: beyond a boundary derived from the
+  initial 95th-percentile radius, outward radial motion, and positive estimated
+  orbital energy; ejected particles remain in the physical state;
+- the energy and ejection calculations use an explicit spherical-monopole
+  approximation plus supported analytic Plummer fields, and are labelled as
+  estimates rather than exact invariants;
+- perspective, top, and profile views preserve zoom and focus, while an optional
+  marker exposes centre-of-mass drift;
+- `Space`, `R`, `F`, `Escape`, and `Tab` provide edge-triggered shortcuts that do
+  not fire while a text field captures the keyboard;
+- requested/effective speed exposes the live compute ceiling instead of implying
+  that the speed slider can outrun the solver;
+- the panel prioritises controls, observation, and experiment setup; performance
+  and technical sections are collapsed by default.
+
+See `docs/STEP9_VALIDATION.md` for the short Windows visual and interaction gate.
 
 ## Validation cadence
 

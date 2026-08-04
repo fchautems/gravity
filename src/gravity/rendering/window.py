@@ -37,6 +37,8 @@ class GlfwWindow:
         self._glfw = glfw_module
         self.handle: Any | None = None
         self._initialized = False
+        self._fullscreen = False
+        self._windowed_geometry = (100, 100, self._config.width, self._config.height)
 
     def open(self) -> None:
         self._glfw.set_error_callback(self._on_error)
@@ -107,6 +109,59 @@ class GlfwWindow:
     def swap_buffers(self) -> None:
         if self.handle is not None:
             self._glfw.swap_buffers(self.handle)
+
+    @property
+    def fullscreen(self) -> bool:
+        return self._fullscreen
+
+    def toggle_fullscreen(self) -> None:
+        """Switch between borderless monitor mode and the previous window geometry."""
+
+        if self.handle is None:
+            return
+        if self._fullscreen:
+            x, y, width, height = self._windowed_geometry
+            self._glfw.set_window_monitor(
+                self.handle,
+                None,
+                x,
+                y,
+                width,
+                height,
+                self._glfw.DONT_CARE,
+            )
+            self._fullscreen = False
+            return
+
+        x, y = self._glfw.get_window_pos(self.handle)
+        width, height = self._glfw.get_window_size(self.handle)
+        self._windowed_geometry = (int(x), int(y), int(width), int(height))
+        monitor = self._glfw.get_primary_monitor()
+        if monitor is None:
+            self._logger.warning("No primary monitor available for fullscreen mode")
+            return
+        mode = self._glfw.get_video_mode(monitor)
+        if mode is None:
+            self._logger.warning("No video mode available for fullscreen mode")
+            return
+        size = mode.size
+        monitor_width = int(size.width if hasattr(size, "width") else size[0])
+        monitor_height = int(size.height if hasattr(size, "height") else size[1])
+        refresh_rate = int(mode.refresh_rate)
+        self._glfw.set_window_monitor(
+            self.handle,
+            monitor,
+            0,
+            0,
+            monitor_width,
+            monitor_height,
+            refresh_rate,
+        )
+        self._fullscreen = True
+
+    def leave_fullscreen(self) -> None:
+        if self._fullscreen:
+            self.toggle_fullscreen()
 
     def close(self) -> None:
         if self.handle is not None:

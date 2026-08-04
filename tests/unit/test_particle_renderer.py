@@ -6,6 +6,8 @@ import moderngl
 import numpy as np
 import pytest
 
+from gravity.core.observation import ColorMode, observe_particles
+from gravity.core.state import ParticleState
 from gravity.rendering.camera import OrbitCamera
 from gravity.rendering.particles import ParticleRenderer, physical_particle_field
 from gravity.rendering.shaders import FRAGMENT_SHADER, VERTEX_SHADER
@@ -147,6 +149,21 @@ def test_zero_size_framebuffer_skips_draw_and_release_is_idempotent() -> None:
         )
 
 
+def test_overlay_render_does_not_clear_the_existing_particle_field() -> None:
+    context = FakeContext()
+    renderer = ParticleRenderer(context, _field(1))  # type: ignore[arg-type]
+    renderer.render(
+        OrbitCamera(),
+        framebuffer_width=640,
+        framebuffer_height=480,
+        point_scale=1.0,
+        clear_frame=False,
+    )
+    assert context.clear_calls == []
+    assert context.vertex_array_resource.calls == [(moderngl.POINTS, 1)]
+    renderer.release()
+
+
 def test_physics_snapshots_update_or_resize_the_single_gpu_buffer() -> None:
     context = FakeContext()
     initial = np.zeros((8, 3), dtype=np.float32)
@@ -191,3 +208,33 @@ def test_graphics_info_and_shader_contract() -> None:
     assert "gl_PointSize" in VERTEX_SHADER
     assert "gl_PointCoord" in FRAGMENT_SHADER
     renderer.release()
+
+
+def test_physical_colour_modes_encode_distinct_observations() -> None:
+    positions64 = np.array(
+        [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [20.0, 0.0, 0.0]],
+        dtype=np.float64,
+    )
+    state = ParticleState.from_arrays(
+        positions64,
+        [[0.0, 0.0, 0.0], [0.1, 0.0, 0.0], [2.0, 0.0, 0.0]],
+        [0.3, 0.3, 0.4],
+    )
+    observations = observe_particles(
+        state,
+        np.array([0, 1, 2], dtype=np.uint8),
+        (),
+        softening=0.08,
+        ejection_radius=10.0,
+        reference_energy=None,
+    )
+    positions = np.ascontiguousarray(positions64, dtype=np.float32)
+    distance = physical_particle_field(positions, observations, ColorMode.DISTANCE)
+    speed = physical_particle_field(positions, observations, ColorMode.SPEED)
+    component = physical_particle_field(positions, observations, ColorMode.COMPONENT)
+    energy = physical_particle_field(positions, observations, ColorMode.ENERGY)
+    ejection = physical_particle_field(positions, observations, ColorMode.EJECTION)
+    assert not np.array_equal(distance.vertices[:, 3:6], speed.vertices[:, 3:6])
+    assert len(np.unique(component.vertices[:, 3:6], axis=0)) == 3
+    assert np.all(np.isfinite(energy.vertices[:, 3:6]))
+    assert ejection.vertices[2, 3] > ejection.vertices[2, 5]

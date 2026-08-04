@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from types import SimpleNamespace
 
 import pytest
 
@@ -26,6 +27,7 @@ class FakeGlfw:
         self.destroyed = 0
         self.hints: list[tuple[int, int]] = []
         self.error_callback: object | None = None
+        self.monitor_changes: list[tuple[object | None, int, int, int, int, int]] = []
 
     def set_error_callback(self, callback: object) -> None:
         self.error_callback = callback
@@ -50,6 +52,27 @@ class FakeGlfw:
 
     def get_window_size(self, _window: object) -> tuple[int, int]:
         return (1280, 800)
+
+    def get_window_pos(self, _window: object) -> tuple[int, int]:
+        return (40, 60)
+
+    def get_primary_monitor(self) -> object:
+        return "monitor"
+
+    def get_video_mode(self, _monitor: object) -> object:
+        return SimpleNamespace(size=(1920, 1080), refresh_rate=60)
+
+    def set_window_monitor(
+        self,
+        _window: object,
+        monitor: object | None,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        refresh_rate: int,
+    ) -> None:
+        self.monitor_changes.append((monitor, x, y, width, height, refresh_rate))
 
     def get_framebuffer_size(self, _window: object) -> tuple[int, int]:
         return (1920, 1200)
@@ -113,4 +136,17 @@ def test_error_callback_decodes_native_byte_messages(caplog: object) -> None:
     with caplog.at_level(logging.WARNING):  # type: ignore[attr-defined]
         callback(42, b"driver failure")
     assert "driver failure" in caplog.text  # type: ignore[attr-defined]
+    window.close()
+
+
+def test_fullscreen_restores_the_previous_window_geometry() -> None:
+    glfw = FakeGlfw()
+    window = GlfwWindow(logging.getLogger("fullscreen-test"), glfw_module=glfw)
+    window.open()
+    window.toggle_fullscreen()
+    assert window.fullscreen
+    assert glfw.monitor_changes[-1] == ("monitor", 0, 0, 1920, 1080, 60)
+    window.leave_fullscreen()
+    assert not window.fullscreen
+    assert glfw.monitor_changes[-1] == (None, 40, 60, 1280, 800, glfw.DONT_CARE)
     window.close()

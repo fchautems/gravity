@@ -8,6 +8,7 @@ from gravity.rendering.camera import (
     MAX_PITCH,
     MIN_DISTANCE,
     MIN_PITCH,
+    CameraView,
     OrbitCamera,
     perspective,
 )
@@ -49,6 +50,19 @@ def test_mvp_payload_is_finite_column_major_float32() -> None:
     assert len(payload) == 64
     assert values.shape == (16,)
     assert np.all(np.isfinite(values))
+
+
+def test_canonical_views_keep_focus_and_zoom() -> None:
+    camera = OrbitCamera()
+    camera.target[:] = [1.0, 2.0, 3.0]
+    camera.distance = 33.0
+    camera.set_view(CameraView.TOP)
+    assert camera.pitch == pytest.approx(MAX_PITCH)
+    camera.set_view(CameraView.PROFILE)
+    assert camera.pitch == pytest.approx(0.0)
+    camera.set_view(CameraView.PERSPECTIVE)
+    assert camera.target == pytest.approx([1.0, 2.0, 3.0])
+    assert camera.distance == pytest.approx(33.0)
 
 
 @pytest.mark.parametrize("aspect", [0.0, -1.0, float("nan")])

@@ -66,6 +66,8 @@ def test_worker_defaults_to_barnes_hut_and_exact_requires_explicit_command() -> 
         assert initial.status.particle_count == 120
         assert initial.positions.dtype == np.float32
         assert not initial.positions.flags.writeable
+        assert initial.observations is not None
+        assert initial.observations.stats.ejected_count >= 0
 
         worker.pause()
         paused = _wait_for(worker, lambda item: item.status.paused)

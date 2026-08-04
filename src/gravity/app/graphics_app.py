@@ -13,9 +13,13 @@ from imgui_bundle.python_backends.glfw_backend import GlfwRenderer
 from gravity.app.physics_worker import PhysicsWorker
 from gravity.core.simulation import SimulationStatus
 from gravity.diagnostics.frame_stats import FrameStats
-from gravity.rendering.camera import OrbitCamera
+from gravity.rendering.camera import CameraView, OrbitCamera
 from gravity.rendering.glfw_input import GlfwInputRouter
-from gravity.rendering.particles import ParticleRenderer, physical_particle_field
+from gravity.rendering.particles import (
+    ParticleRenderer,
+    center_marker_field,
+    physical_particle_field,
+)
 from gravity.rendering.window import GlfwWindow, GraphicsInitializationError
 from gravity.ui.panel import UiActions, UiState, draw_control_panel, draw_performance_overlay
 from gravity.ui.theme import configure_theme
@@ -59,6 +63,7 @@ def run_graphics_app(logger: logging.Logger) -> None:
     context = None
     imgui_renderer = None
     particle_renderer = None
+    center_renderer = None
     physics_worker = PhysicsWorker(logger)
     imgui_context_created = False
 
@@ -86,10 +91,20 @@ def run_graphics_app(logger: logging.Logger) -> None:
 
         physics_worker.start()
         current_snapshot = physics_worker.wait_for_snapshot()
+        ui_state = UiState(time_scale=current_snapshot.status.time_scale)
         particle_renderer = ParticleRenderer(
             context,
-            physical_particle_field(current_snapshot.positions),
+            physical_particle_field(
+                current_snapshot.positions,
+                current_snapshot.observations,
+                ui_state.color_mode,
+            ),
         )
+        if current_snapshot.observations is not None:
+            center_renderer = ParticleRenderer(
+                context,
+                center_marker_field(current_snapshot.observations.stats.center_of_mass),
+            )
         graphics_info = particle_renderer.graphics_info()
         logger.info(
             "Coupled simulation ready: OpenGL %s, renderer=%s, solver=%s, particles=%s",
@@ -99,9 +114,9 @@ def run_graphics_app(logger: logging.Logger) -> None:
             current_snapshot.status.particle_count,
         )
 
-        ui_state = UiState(time_scale=current_snapshot.status.time_scale)
         stats = FrameStats()
         previous_frame_start = perf_counter()
+        rendered_color_mode = ui_state.color_mode
 
         while not window.should_close():
             frame_start = perf_counter()
@@ -113,11 +128,18 @@ def run_graphics_app(logger: logging.Logger) -> None:
             if newest_snapshot is not None:
                 particle_renderer.update_positions(
                     newest_snapshot.positions,
+                    observations=newest_snapshot.observations,
+                    color_mode=ui_state.color_mode,
                     reset_visuals=(
                         newest_snapshot.status.generation != current_snapshot.status.generation
                     ),
                 )
+                if center_renderer is not None and newest_snapshot.observations is not None:
+                    center_renderer.update_field(
+                        center_marker_field(newest_snapshot.observations.stats.center_of_mass)
+                    )
                 current_snapshot = newest_snapshot
+                rendered_color_mode = ui_state.color_mode
 
             window.poll_events()
             imgui_renderer.process_inputs()  # type: ignore[no-untyped-call]
@@ -129,6 +151,23 @@ def run_graphics_app(logger: logging.Logger) -> None:
                 ui_captures_mouse=bool(imgui.get_io().want_capture_mouse),
                 viewport_height=window_size[1],
             )
+            shortcuts = input_router.poll_shortcuts(
+                ui_captures_keyboard=bool(imgui.get_io().want_capture_keyboard),
+            )
+            if shortcuts.toggle_pause:
+                if current_snapshot.status.paused:
+                    physics_worker.resume()
+                else:
+                    physics_worker.pause()
+            if shortcuts.reset_camera:
+                camera.reset()
+                ui_state.camera_view = CameraView.PERSPECTIVE
+            if shortcuts.toggle_fullscreen:
+                window.toggle_fullscreen()
+            if shortcuts.leave_fullscreen:
+                window.leave_fullscreen()
+            if shortcuts.toggle_panel:
+                ui_state.panel_visible = not ui_state.panel_visible
 
             actions = draw_control_panel(
                 ui_state,
@@ -137,11 +176,24 @@ def run_graphics_app(logger: logging.Logger) -> None:
                 graphics=graphics_info,
                 window_size=window_size,
                 dpi_scale=dpi_scale,
+                observations=current_snapshot.observations,
             )
-            draw_performance_overlay(stats)
+            if ui_state.panel_visible:
+                draw_performance_overlay(stats)
             if actions.reset_camera:
                 camera.reset()
+                ui_state.camera_view = CameraView.PERSPECTIVE
+            if actions.camera_view is not None:
+                camera.set_view(actions.camera_view)
             _dispatch_simulation_actions(physics_worker, current_snapshot.status, actions)
+
+            if rendered_color_mode is not ui_state.color_mode:
+                particle_renderer.update_positions(
+                    current_snapshot.positions,
+                    observations=current_snapshot.observations,
+                    color_mode=ui_state.color_mode,
+                )
+                rendered_color_mode = ui_state.color_mode
 
             draw_start = perf_counter()
             particle_renderer.render(
@@ -150,6 +202,14 @@ def run_graphics_app(logger: logging.Logger) -> None:
                 framebuffer_height=framebuffer_height,
                 point_scale=ui_state.point_scale,
             )
+            if ui_state.show_center_of_mass and center_renderer is not None:
+                center_renderer.render(
+                    camera,
+                    framebuffer_width=framebuffer_width,
+                    framebuffer_height=framebuffer_height,
+                    point_scale=1.0,
+                    clear_frame=False,
+                )
             imgui.render()
             imgui_renderer.render(imgui.get_draw_data())
             window.swap_buffers()
@@ -161,6 +221,8 @@ def run_graphics_app(logger: logging.Logger) -> None:
         _release_safely(logger, "physics worker", physics_worker.shutdown)
         if particle_renderer is not None:
             _release_safely(logger, "particle renderer", particle_renderer.release)
+        if center_renderer is not None:
+            _release_safely(logger, "centre-of-mass renderer", center_renderer.release)
         if imgui_renderer is not None:
             _release_safely(logger, "ImGui renderer", imgui_renderer.shutdown)
         if imgui_context_created:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 from math import cos, exp, radians, sin, tan
 
 import numpy as np
@@ -15,6 +16,20 @@ MAX_DISTANCE = 90.0
 MIN_PITCH = radians(-85.0)
 MAX_PITCH = radians(85.0)
 FIELD_OF_VIEW = radians(48.0)
+
+
+class CameraView(StrEnum):
+    PERSPECTIVE = "perspective"
+    TOP = "top"
+    PROFILE = "profile"
+
+    @property
+    def french_name(self) -> str:
+        return {
+            CameraView.PERSPECTIVE: "Perspective",
+            CameraView.TOP: "Dessus",
+            CameraView.PROFILE: "Profil",
+        }[self]
 
 
 def _normalized(vector: np.ndarray) -> np.ndarray:
@@ -73,6 +88,21 @@ class OrbitCamera:
         self.distance = DEFAULT_DISTANCE
         self.yaw = DEFAULT_YAW
         self.pitch = DEFAULT_PITCH
+
+    def set_view(self, view: CameraView) -> None:
+        """Select a canonical view without changing zoom or focus."""
+
+        if not isinstance(view, CameraView):
+            raise TypeError("view must be a CameraView")
+        if view is CameraView.PERSPECTIVE:
+            self.yaw = DEFAULT_YAW
+            self.pitch = DEFAULT_PITCH
+        elif view is CameraView.TOP:
+            self.yaw = 0.0
+            self.pitch = MAX_PITCH
+        else:
+            self.yaw = 0.0
+            self.pitch = 0.0
 
     @property
     def position(self) -> np.ndarray:

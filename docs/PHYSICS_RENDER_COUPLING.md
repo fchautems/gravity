@@ -26,9 +26,11 @@ rendering consumes, the superseded presentation copy is dropped. A physics
 step, particle, or command is never dropped.
 
 Each snapshot contains a C-contiguous `float32 (N, 3)` position copy and a small
-status value. The array is marked read-only before publication. The renderer
+status value. Step 9 extends it with compact read-only observation arrays for
+colouring and statistics. The renderer
 updates the single interleaved GPU buffer only for a new snapshot and retains
-one draw call. The step-3 shader rotation and `u_time` uniform no longer exist.
+one particle-field draw call. The optional centre-of-mass marker uses one extra
+single-point draw. The step-3 shader rotation and `u_time` uniform no longer exist.
 
 ## Commands and scheduling
 

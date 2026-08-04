@@ -7,6 +7,7 @@ import numpy as np
 
 from gravity.app import graphics_app
 from gravity.core.simulation import RenderSnapshot, SimulationStatus, SolverMode
+from gravity.rendering.glfw_input import ShortcutActions
 from gravity.rendering.particles import GraphicsInfo
 from gravity.ui.panel import UiActions
 
@@ -83,6 +84,9 @@ def test_graphics_loop_releases_every_owned_resource(monkeypatch: object) -> Non
         def update_camera(self, **_kwargs: object) -> None:
             events.append("camera-input")
 
+        def poll_shortcuts(self, **_kwargs: object) -> ShortcutActions:
+            return ShortcutActions()
+
     class FakeParticleRenderer:
         def __init__(self, _context: object, _field: object) -> None:
             pass
@@ -133,7 +137,10 @@ def test_graphics_loop_releases_every_owned_resource(monkeypatch: object) -> Non
     fake_imgui = SimpleNamespace(
         create_context=lambda: events.append("ui-create"),
         destroy_context=lambda: events.append("ui-destroy"),
-        get_io=lambda: SimpleNamespace(want_capture_mouse=False),
+        get_io=lambda: SimpleNamespace(
+            want_capture_mouse=False,
+            want_capture_keyboard=False,
+        ),
         new_frame=lambda: events.append("ui-frame"),
         render=lambda: events.append("ui-finish"),
         get_draw_data=lambda: object(),
@@ -146,7 +153,11 @@ def test_graphics_loop_releases_every_owned_resource(monkeypatch: object) -> Non
     monkeypatch.setattr(graphics_app, "GlfwRenderer", FakeImguiRenderer)  # type: ignore[attr-defined]
     monkeypatch.setattr(graphics_app, "GlfwInputRouter", FakeInputRouter)  # type: ignore[attr-defined]
     monkeypatch.setattr(graphics_app, "PhysicsWorker", FakePhysicsWorker)  # type: ignore[attr-defined]
-    monkeypatch.setattr(graphics_app, "physical_particle_field", lambda _positions: object())  # type: ignore[attr-defined]
+    monkeypatch.setattr(  # type: ignore[attr-defined]
+        graphics_app,
+        "physical_particle_field",
+        lambda *_args: object(),
+    )
     monkeypatch.setattr(graphics_app, "ParticleRenderer", FakeParticleRenderer)  # type: ignore[attr-defined]
     monkeypatch.setattr(  # type: ignore[attr-defined]
         graphics_app,

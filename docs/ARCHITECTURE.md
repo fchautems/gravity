@@ -126,10 +126,10 @@ State invariants:
 - the solver cannot resize arrays during a step;
 - a published snapshot is read-only from the renderer's perspective.
 
-The render snapshot contains positions converted to `float32`, stable IDs, and
-only the attributes required by the active colour/size mode. At 10,000 particles
-this copy is small and prevents the GPU from reading arrays while physics writes
-them.
+The render snapshot contains positions, radii, speeds, estimated specific
+energies, origin components, and ejection flags in compact presentation dtypes.
+All arrays are read-only. At 10,000 particles this copy remains small and
+prevents the GPU or UI from reading arrays while physics writes them.
 
 ## 6. Units and force model
 

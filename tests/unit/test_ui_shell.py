@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import numpy as np
 import pytest
 from imgui_bundle import imgui
 
 from gravity.core.experiment import ExperimentConfig, ScenarioKind
+from gravity.core.observation import ObservationStats, ParticleObservations
 from gravity.core.simulation import SimulationStatus, SolverMode
 from gravity.diagnostics.frame_stats import FrameStats
 from gravity.rendering.particles import GraphicsInfo
@@ -48,6 +50,17 @@ def _simulation(
     )
 
 
+def _observations(count: int = 10_000) -> ParticleObservations:
+    return ParticleObservations(
+        radii=np.zeros(count, dtype=np.float32),
+        speeds=np.zeros(count, dtype=np.float32),
+        specific_energies=np.zeros(count, dtype=np.float32),
+        components=np.zeros(count, dtype=np.uint8),
+        ejected=np.zeros(count, dtype=np.bool_),
+        stats=ObservationStats((0.0, 0.0, 0.0), 2.5, 0.7, -0.3, 0.1, 12.0, 0),
+    )
+
+
 def test_theme_and_complete_panel_build_without_a_gpu(imgui_context: None) -> None:
     configure_theme(1.5)
     assert imgui.get_style().window_rounding == pytest.approx(15.0)
@@ -62,6 +75,7 @@ def test_theme_and_complete_panel_build_without_a_gpu(imgui_context: None) -> No
         graphics=GraphicsInfo(330, "Test GPU", "Test Vendor", "3.3"),
         window_size=(1280, 800),
         dpi_scale=1.5,
+        observations=_observations(),
     )
     draw_performance_overlay(stats)
     imgui.render()

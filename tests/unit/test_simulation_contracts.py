@@ -27,6 +27,12 @@ def test_snapshot_is_contiguous_float32_and_becomes_read_only() -> None:
     assert not snapshot.positions.flags.writeable
     assert snapshot.status.physics_ms == pytest.approx(12.0)
     assert snapshot.status.solver_mode.french_name == "Barnes–Hut"
+    assert snapshot.status.effective_time_scale == pytest.approx(1.0)
+
+
+def test_effective_speed_reports_the_compute_ceiling() -> None:
+    status = _status(time_scale=2.0, time_step=0.02, physics_seconds=0.04)
+    assert status.effective_time_scale == pytest.approx(0.5)
 
 
 @pytest.mark.parametrize(

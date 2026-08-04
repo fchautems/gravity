@@ -15,8 +15,10 @@ from gravity.core.experiment import (
     ScenarioKind,
     estimated_barnes_hut_load,
 )
+from gravity.core.observation import ColorMode, ParticleObservations
 from gravity.core.simulation import SimulationStatus, SolverMode
 from gravity.diagnostics.frame_stats import FrameStats
+from gravity.rendering.camera import CameraView
 from gravity.rendering.particles import GraphicsInfo
 from gravity.ui import strings
 
@@ -30,6 +32,9 @@ class UiState:
     draft_particle_count: int = 10_000
     draft_seed: int = 2_026_080_3
     synced_generation: int = -1
+    color_mode: ColorMode = ColorMode.DISTANCE
+    camera_view: CameraView = CameraView.PERSPECTIVE
+    show_center_of_mass: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +46,7 @@ class UiActions:
     time_scale: float | None = None
     solver_mode: SolverMode | None = None
     experiment: ExperimentConfig | None = None
+    camera_view: CameraView | None = None
 
 
 def _fresh_seed(previous: int) -> int:
@@ -81,6 +87,7 @@ def draw_control_panel(
     graphics: GraphicsInfo,
     window_size: tuple[int, int],
     dpi_scale: float,
+    observations: ParticleObservations | None = None,
 ) -> UiActions:
     """Draw the right panel and return discrete requests for the app controller."""
 
@@ -103,13 +110,11 @@ def draw_control_panel(
     selected_time_scale = None
     selected_solver = None
     selected_experiment = None
+    selected_camera_view = None
     if expanded:
         imgui.text_colored((0.30, 0.72, 1.00, 1.00), strings.APP_NAME)
         imgui.text(simulation.experiment_config.scenario.french_name)
         imgui.text_disabled(strings.VISUAL_MILESTONE)
-        imgui.spacing()
-        imgui.text_wrapped(strings.PHYSICAL_NOTICE)
-
         imgui.separator_text(strings.CONTROLS)
         if imgui.button(
             strings.RESUME if simulation.paused else strings.PAUSE,
@@ -141,6 +146,53 @@ def draw_control_panel(
         )
         if speed_changed:
             selected_time_scale = state.time_scale
+        imgui.text_disabled(
+            f"Demandée : {simulation.time_scale:.2f}x · réelle : "
+            f"{simulation.effective_time_scale:.2f}x"
+        )
+
+        imgui.separator_text(strings.OBSERVATION)
+        imgui.text(strings.COLOR_MODE)
+        imgui.set_next_item_width(-1.0)
+        color_modes = list(ColorMode)
+        color_index = color_modes.index(state.color_mode)
+        color_changed, color_index = imgui.combo(
+            "##color-mode",
+            color_index,
+            [mode.french_name for mode in color_modes],
+        )
+        if color_changed:
+            state.color_mode = color_modes[color_index]
+
+        imgui.text(strings.CAMERA_VIEW)
+        imgui.set_next_item_width(-1.0)
+        camera_views = list(CameraView)
+        view_index = camera_views.index(state.camera_view)
+        view_changed, view_index = imgui.combo(
+            "##camera-view",
+            view_index,
+            [view.french_name for view in camera_views],
+        )
+        if view_changed:
+            state.camera_view = camera_views[view_index]
+            selected_camera_view = state.camera_view
+        _, state.show_center_of_mass = imgui.checkbox(
+            strings.SHOW_CENTER,
+            state.show_center_of_mass,
+        )
+        if observations is not None:
+            ejected = observations.stats.ejected_count
+            linked = simulation.particle_count - ejected
+            imgui.text(f"Liées : {_format_particle_count(linked)}")
+            imgui.same_line()
+            imgui.text_colored((1.0, 0.42, 0.22, 1.0), f"Éjectées : {ejected}")
+            if imgui.collapsing_header(strings.PHYSICAL_STATS):
+                physical = observations.stats
+                imgui.text_disabled(f"Rayon médian : {physical.median_radius:.2f}")
+                imgui.text_disabled(f"Vitesse max. : {physical.max_speed:.3f}")
+                imgui.text_disabled(f"Énergie estimée : {physical.estimated_energy:.5f}")
+                imgui.text_disabled(f"Dérive estimée : {physical.energy_drift_percent:+.2f} %")
+                imgui.text_disabled(f"Seuil d'ejection : {physical.ejection_radius:.2f}")
 
         imgui.separator_text(strings.EXPERIMENT)
         scenario_index = SCENARIO_CATALOG.index(state.draft_scenario)
@@ -200,16 +252,15 @@ def draw_control_panel(
                 seed=state.draft_seed,
             )
 
-        imgui.separator_text(strings.PERFORMANCE)
-        imgui.text(f"{stats.fps:5.1f} FPS")
-        imgui.text_disabled(f"Image médiane : {stats.frame_ms:5.2f} ms")
-        imgui.text_disabled(f"Rendu médian : {stats.draw_ms:5.2f} ms")
-        imgui.text(f"{simulation.particle_count:,} particules".replace(",", "'"))
-        imgui.text_disabled(f"Physique : {simulation.physics_ms:5.2f} ms / pas")
-        simulated_time = f"{simulation.simulation_time:.2f}"
-        step_count = f"{simulation.step_count:,}".replace(",", "'")
-        imgui.text_disabled(f"Temps simulé : {simulated_time} · pas {step_count}")
-        imgui.text_wrapped("1 instantané · 1 tampon GPU · 1 appel de dessin")
+        if imgui.collapsing_header(strings.PERFORMANCE):
+            imgui.text(f"{stats.fps:5.1f} FPS")
+            imgui.text_disabled(f"Image médiane : {stats.frame_ms:5.2f} ms")
+            imgui.text_disabled(f"Rendu médian : {stats.draw_ms:5.2f} ms")
+            imgui.text(f"{simulation.particle_count:,} particules".replace(",", "'"))
+            imgui.text_disabled(f"Physique : {simulation.physics_ms:5.2f} ms / pas")
+            simulated_time = f"{simulation.simulation_time:.2f}"
+            step_count = f"{simulation.step_count:,}".replace(",", "'")
+            imgui.text_disabled(f"Temps simulé : {simulated_time} · pas {step_count}")
 
         if imgui.collapsing_header(strings.ADVANCED_PHYSICS):
             imgui.text(f"Moteur : {simulation.solver_mode.french_name}")
@@ -234,6 +285,7 @@ def draw_control_panel(
 
         if imgui.collapsing_header(strings.HELP):
             imgui.text_wrapped(strings.MOUSE_HELP)
+            imgui.text_wrapped(strings.KEYBOARD_HELP)
 
         imgui.spacing()
         if imgui.button(strings.HIDE_SETTINGS, (-1.0, 0.0)):
@@ -247,6 +299,7 @@ def draw_control_panel(
         time_scale=selected_time_scale,
         solver_mode=selected_solver,
         experiment=selected_experiment,
+        camera_view=selected_camera_view,
     )
 
 
@@ -285,5 +338,5 @@ def draw_performance_overlay(stats: FrameStats) -> None:
     expanded, _ = imgui.begin("Gravity##performance-overlay", None, flags)
     if expanded:
         imgui.text_colored((0.42, 0.78, 1.00, 1.00), f"{stats.fps:4.0f} FPS")
-        imgui.text_disabled(strings.MOUSE_HELP)
+        imgui.text_disabled(strings.KEYBOARD_HELP)
     imgui.end()

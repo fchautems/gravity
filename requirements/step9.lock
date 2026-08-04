@@ -1,0 +1,31 @@
+# Gravity step-9 environment for 64-bit CPython 3.12.
+#
+# Direct and transitive packages are pinned so INSTALLER.bat resolves the same
+# tested numerical, graphics, UI, observation, and quality environment.
+# Step 9 adds no third-party dependency beyond the accepted step-8 stack.
+
+ast_serialize==0.6.0
+colorama==0.4.6; sys_platform == "win32"
+coverage==7.15.3
+glcontext==3.0.0
+glfw==2.10.2
+imgui-bundle==1.92.801
+iniconfig==2.3.0
+librt==0.13.0
+llvmlite==0.48.0
+moderngl==5.12.0
+mypy==2.3.0
+mypy_extensions==1.1.0
+numba==0.66.0
+numpy==2.4.6
+packaging==26.2
+pathspec==1.1.1
+pluggy==1.6.0
+Pygments==2.20.0
+PyOpenGL==3.1.10
+PyOpenGL-accelerate==3.1.10
+pytest==9.1.1
+pytest-cov==7.1.0
+ruff==0.16.1
+setuptools==83.0.0
+typing_extensions==4.16.0

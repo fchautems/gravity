@@ -10,8 +10,8 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 8 complete: Gravity is now a reproducible initial-condition laboratory
-with eight physical scenarios and a selectable Barnes-Hut particle count.**
+**Step 9 complete: Gravity now makes its physical evolution observable without
+turning the application into a cockpit.**
 
 `LANCER_GRAVITY.bat` opens a styled, resizable 3D window with a smooth orbit
 camera, a French control panel, live frame and physics metrics, and 100 to 50,000
@@ -20,6 +20,13 @@ include the spiral galaxy, disk, ring, sphere, two galaxy encounters, a bound
 random cloud, and total chaos. The worker publishes only complete immutable
 snapshots; rendering reuses the newest one and never waits for a force
 calculation.
+
+Five colour modes expose distance, speed, origin component, approximate orbital
+energy, or ejection state. The worker reports the centre of mass, median radius,
+maximum speed, estimated energy drift, and a conservative ejection count in
+linear time. Canonical top/profile/perspective views and a centre-of-mass marker
+help compare scenarios. Space pauses, `R` recentres, `F` toggles fullscreen, and
+`Tab` hides the controls.
 
 Barnes-Hut remains the automatic and recommended backend. The exact `O(N²)` engine is
 available only inside the collapsed advanced-physics section as an intentional
@@ -61,6 +68,10 @@ troubleshooting path.
 - drag with the right or middle button to pan;
 - use the wheel to zoom;
 - use `Pause`/`Reprendre`, `Avancer d'un pas`, and `Recentrer la vue`;
+- use `Espace` for pause, `R` to recenter, `F` for fullscreen, and `Tab` to hide
+  or restore the panel;
+- compare the five colour modes and the perspective, top, and profile views;
+- optionally show the centre-of-mass marker;
 - choose a starting scenario, Barnes-Hut particle count, and visible random seed;
 - use `Appliquer et recommencer` to restart with the displayed settings, or
   `Changer la graine` to prepare a new random draw without restarting;
@@ -68,8 +79,8 @@ troubleshooting path.
 - optionally open `Physique avancée` to test the exact 1,000-particle reference,
   then return to Barnes-Hut.
 
-The short [step-8 validation checklist](docs/STEP8_VALIDATION.md) covers the
-catalogue, repeat/reroll semantics, count changes, and exact-mode guard. The
+The short [step-9 validation checklist](docs/STEP9_VALIDATION.md) covers colour
+modes, ejections, views, centre marker, shortcuts, and effective speed. The
 [initial-scenario reference](docs/INITIAL_SCENARIOS.md) records what each preset
 means physically.
 

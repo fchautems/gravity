@@ -14,6 +14,7 @@ from time import perf_counter
 import numpy as np
 
 from gravity.core.experiment import ExperimentConfig
+from gravity.core.observation import initial_ejection_radius, observe_particles
 from gravity.core.simulation import RenderSnapshot, SimulationStatus, SolverMode
 from gravity.physics import (
     AccelerationSolver,
@@ -66,6 +67,8 @@ class _Runtime:
     generation: int
     paused: bool
     time_scale: float
+    ejection_radius: float
+    reference_energy: float
     physics_seconds: float = 0.0
 
 
@@ -249,6 +252,15 @@ class PhysicsWorker:
         self_gravity = self._solver_factory(mode)
         solver = CompositeGravitySolver(self_gravity, scenario.external_fields)
         integrator = LeapfrogIntegrator(solver, scenario.time_step, scenario.softening)
+        ejection_radius = initial_ejection_radius(scenario.state)
+        initial_observations = observe_particles(
+            scenario.state,
+            scenario.components,
+            scenario.external_fields,
+            softening=scenario.softening,
+            ejection_radius=ejection_radius,
+            reference_energy=None,
+        )
         self._logger.info(
             "Physics generation %s ready: solver=%s, scenario=%s, particles=%s, seed=%s, dt=%s",
             generation,
@@ -267,11 +279,23 @@ class PhysicsWorker:
             generation=generation,
             paused=paused,
             time_scale=time_scale,
+            ejection_radius=ejection_radius,
+            reference_energy=initial_observations.stats.estimated_energy,
         )
 
-    def _publish(self, runtime: _Runtime) -> None:
+    def _publish(self, runtime: _Runtime, *, step_started: float | None = None) -> None:
         state = runtime.scenario.state
         positions = np.ascontiguousarray(state.positions, dtype=np.float32)
+        observations = observe_particles(
+            state,
+            runtime.scenario.components,
+            runtime.scenario.external_fields,
+            softening=runtime.scenario.softening,
+            ejection_radius=runtime.ejection_radius,
+            reference_energy=runtime.reference_energy,
+        )
+        if step_started is not None:
+            runtime.physics_seconds = perf_counter() - step_started
         status = SimulationStatus(
             solver_mode=runtime.solver_mode,
             particle_count=state.particle_count,
@@ -282,8 +306,9 @@ class PhysicsWorker:
             time_scale=runtime.time_scale,
             physics_seconds=runtime.physics_seconds,
             experiment=runtime.experiment,
+            time_step=runtime.scenario.time_step,
         )
-        snapshot = RenderSnapshot(positions, status)
+        snapshot = RenderSnapshot(positions, status, observations)
         try:
             self._snapshots.get_nowait()
         except queue.Empty:
@@ -296,8 +321,7 @@ class PhysicsWorker:
     def _advance_once(self, runtime: _Runtime) -> None:
         started = perf_counter()
         runtime.integrator.step(runtime.scenario.state)
-        runtime.physics_seconds = perf_counter() - started
-        self._publish(runtime)
+        self._publish(runtime, step_started=started)
 
     def _handle_command(self, runtime: _Runtime, command: _Command) -> _Runtime | None:
         if command.kind is _CommandKind.STOP:

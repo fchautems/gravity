@@ -32,6 +32,14 @@ An analytic halo may be used to produce a stable V1 galaxy, but results must
 state that this is a modelled external potential, not a fully self-consistent
 dark-matter particle simulation.
 
+## Step-4 implementation evidence
+
+The direct symmetric solver, strict `float64` particle state, softened-energy
+diagnostics, and kick-drift-kick integrator were implemented without fast-math.
+The documented 100-orbit circular binary produced relative energy drift
+`2.67e-9` and centre-of-mass drift `3.76e-13`; the full parameters and portable
+thresholds are recorded in `../PHYSICS_REFERENCE.md`.
+
 ## Rejected alternatives
 
 - Explicit Euler: unacceptable energy behaviour for orbits.
@@ -39,4 +47,3 @@ dark-matter particle simulation.
   distinguish from integrator or tree bugs.
 - Adaptive time step in V1: adds synchronization and conservation complexity.
 - Direct summation as the only engine: cannot scale to the default target.
-

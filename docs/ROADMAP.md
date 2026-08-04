@@ -10,9 +10,9 @@ earlier one.
 |---:|---|---|---|
 | 1 | V1 specification and architecture | Scope, budgets, module boundaries, numerical model, and test strategy are recorded; source package skeleton exists. | **Complete** |
 | 2 | Reproducible setup and double-click launchers | Clean Windows setup, launch, and test smoke path work without a typed command; failures produce useful output. | **Complete** |
-| 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | **Ready for Windows validation** |
-| 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | Next after validation |
-| 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | Planned |
+| 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | **Complete — Windows validation passed** |
+| 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | **Complete** |
+| 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | Next |
 | 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | Planned |
 | 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | Planned |
 | 8 | Complete user controls | Basic/advanced controls, validation, presets, settings persistence, and French help text are usable. | Planned |
@@ -73,6 +73,33 @@ The complete non-hardware suite contains 54 tests at this gate. Shader and
 window creation still require the short native Windows check in
 `GRAPHICS_VALIDATION.md`; a headless container cannot prove the target driver's
 OpenGL context or DPI behaviour.
+
+The graphics gate was subsequently validated on a Windows work PC with Intel
+UHD integrated graphics: 10,000 particles rendered at the display-limited 60
+FPS, with orbit, pan, zoom, controls, and resize behaving correctly. A later
+reference-PC run remains useful but does not block the independent physics
+steps.
+
+## Step 4 output
+
+Step 4 adds the independent numerical reference required before Barnes-Hut:
+
+- `ParticleState` enforces finite, C-contiguous `float64` state arrays, positive
+  masses, and unique `uint64` IDs;
+- `ExactGravitySolver` evaluates each pair once and writes equal/opposite pair
+  forces through a cached, non-fast-math Numba kernel;
+- `LeapfrogIntegrator` implements fixed-step kick-drift-kick and reuses the
+  final acceleration safely between consecutive advances;
+- invariant helpers measure centre of mass, momentum, angular momentum, and
+  softened total energy;
+- analytic, invalid-boundary, compiled-vs-Python, and 100-orbit tests establish
+  the exact solver as the future Barnes-Hut oracle.
+
+At this gate the complete automated suite contains 98 tests with 87.39% branch
+coverage. The documented circular binary has relative energy drift `2.67e-9`
+after 100 orbits and centre-of-mass drift `3.76e-13`, both well inside the V1
+budgets. See `docs/PHYSICS_REFERENCE.md` for the model and reproducible test
+parameters.
 
 ## Validation cadence
 

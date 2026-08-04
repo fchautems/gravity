@@ -10,13 +10,20 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 3 implemented: the first 3D graphics shell is ready for validation on the
-reference Windows PC.**
+**Step 4 complete: the exact gravitational reference engine and fixed-step
+leapfrog integrator pass the numerical validation gate.**
 
 `LANCER_GRAVITY.bat` now opens a styled, resizable 3D window with a smooth orbit
 camera, a French control panel, live frame metrics, and 10,000 synthetic
-particles submitted in one GPU draw. The visual rotation is deliberately
-artificial: the exact gravitational solver begins in step 4.
+particles submitted in one GPU draw. The visual rotation remains deliberately
+artificial: step 4 validates physics independently, step 5 creates physical
+galactic initial conditions, and the later coupling step connects snapshots to
+the renderer.
+
+The exact engine stores state in validated `float64` arrays, evaluates every
+unordered pair once in compiled code, and advances it with kick-drift-kick
+leapfrog. Its documented 100-orbit test is in the
+[physics reference](docs/PHYSICS_REFERENCE.md).
 
 ## Windows quick start
 
@@ -91,11 +98,11 @@ src/gravity/
 └── ui/           # User controls and input mapping
 ```
 
-The packages now include the startup boundary, local diagnostics, the compiled
-Numba compatibility smoke test, the orbit camera, input routing, deterministic
-synthetic field, ModernGL renderer, and Dear ImGui shell. Simulation
-implementations arrive in the roadmap step where they can be tested
-meaningfully.
+The packages now include the startup boundary, local diagnostics, orbit camera,
+input routing, deterministic synthetic field, ModernGL renderer, Dear ImGui
+shell, validated particle state, exact force solver, leapfrog integrator, and
+physical-invariant diagnostics. The exact solver is intentionally independent
+from graphics until the scenario and approximation gates are complete.
 
 ## Historical version
 

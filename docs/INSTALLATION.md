@@ -1,7 +1,9 @@
 # Installation et premier rendu 3D de Gravity sous Windows
 
-Ce guide couvre le jalon 3. Il installe le calcul compile et la pile graphique,
-puis ouvre le premier nuage galactique 3D.
+Ce guide couvre le jalon 4. Il installe le calcul compile et la pile graphique,
+valide le moteur gravitationnel exact, puis ouvre le premier nuage galactique
+3D. Le moteur exact n'est pas encore relie au rendu : l'image reste donc celle
+du jalon 3 jusqu'aux prochaines etapes.
 
 ## Prerequis
 
@@ -23,8 +25,8 @@ ZIP.
 4. La fenetre `Gravity - Galaxie 3D` doit s'ouvrir avec 10 000 particules et un
    panneau de reglages a droite.
 
-Apres une mise a jour depuis le jalon 2, relancez `INSTALLER.bat` une fois. Il
-reutilise l'environnement existant et ajoute les paquets graphiques verrouilles.
+Apres une mise a jour d'un jalon precedent, relancez `INSTALLER.bat` une fois.
+Il reutilise l'environnement existant et applique le verrouillage courant.
 
 L'installateur cree `.venv` dans le dossier du projet. Il ne modifie pas les
 autres environnements Python de l'ordinateur.
@@ -41,7 +43,9 @@ Double-cliquez sur `TESTER_GRAVITY.bat`. Il execute successivement :
 
 Les tests sans materiel verifient aussi la camera, les gestes de souris, la
 generation des 10 000 points, le contrat d'un seul appel GPU, les shaders, les
-statistiques d'image et l'ordre de fermeture des ressources.
+statistiques d'image et l'ordre de fermeture des ressources. Ils valident en
+plus les forces exactes, les invariants et la stabilite d'une orbite binaire sur
+100 periodes.
 
 La fenetre reste ouverte a la fin pour permettre de lire le resultat.
 

@@ -1,7 +1,7 @@
 # Gravity architecture
 
 Status: implementation baseline  
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 ## 1. Architectural goals
 
@@ -179,6 +179,12 @@ tree internals.
 - each pair is evaluated once and contributes equal/opposite force;
 - intended for tests and small interactive systems, not the 10,000 default.
 
+This boundary is implemented at step 4 by `ExactGravitySolver`, operating on a
+validated `ParticleState`. The compiled kernels deliberately avoid fast-math so
+the exact engine remains a conservative comparison oracle. Its softening,
+fixed-step integration, and invariant checks are documented in
+`PHYSICS_REFERENCE.md`.
+
 ### Barnes-Hut solver
 
 - 3D octree rebuilt for each force evaluation;
@@ -334,4 +340,3 @@ runtime, but the real target PC remains the decisive environment.
 - No optimization without an accuracy comparison and benchmark.
 - No swallowed worker exception or console-only user error.
 - No expansion of V1 scope without updating the specification and roadmap.
-

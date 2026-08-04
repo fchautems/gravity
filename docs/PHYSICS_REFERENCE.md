@@ -79,6 +79,7 @@ the compiled kernels with their Python reference execution.
 - `gravity.physics.invariants`: mass, centre of mass, momentum, angular
   momentum, kinetic energy, softened potential energy, and total energy.
 
-Step 5 will build physically coherent galactic initial conditions with these
-contracts. Step 6 will compare Barnes-Hut accelerations directly against this
-exact solver before the approximate engine can become interactive.
+Step 5 builds physically coherent galactic initial conditions with these
+contracts. Step 6 now compares Barnes-Hut accelerations directly against this
+exact solver and retains it as the permanent oracle. The approximate engine
+passes that gate; its method and evidence are in `BARNES_HUT.md`.

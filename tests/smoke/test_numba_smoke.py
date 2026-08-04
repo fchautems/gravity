@@ -11,3 +11,5 @@ def test_numba_compiles_and_executes(monkeypatch: object, tmp_path: Path) -> Non
     report = run_runtime_checks(run_jit=True)
     numba_check = next(check for check in report.checks if check.name == "Compilation Numba")
     assert numba_check.ok, numba_check.detail
+    barnes_hut_check = next(check for check in report.checks if check.name == "Moteur Barnes-Hut")
+    assert barnes_hut_check.ok, barnes_hut_check.detail

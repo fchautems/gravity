@@ -106,6 +106,55 @@ def _run_numba_smoke() -> CheckResult:
     return CheckResult("Compilation Numba", True, "calcul natif valide")
 
 
+def _run_barnes_hut_smoke() -> CheckResult:
+    """Warm and verify the real sequential and parallel step-6 kernels."""
+
+    try:
+        import numpy as np
+
+        from gravity.physics import BarnesHutSolver
+
+        particle_count = 2_100
+        phase = np.linspace(0.0, 12.0 * np.pi, particle_count, endpoint=False)
+        radius = np.linspace(0.2, 6.0, particle_count)
+        positions = np.ascontiguousarray(
+            np.column_stack(
+                (
+                    radius * np.cos(phase),
+                    0.05 * np.sin(phase * 0.37),
+                    radius * np.sin(phase),
+                )
+            ),
+            dtype=np.float64,
+        )
+        masses = np.full(particle_count, 1.0 / particle_count, dtype=np.float64)
+        solver = BarnesHutSolver()
+        acceleration = solver.compute(positions, masses, 0.08)
+        stats = solver.last_stats
+        if (
+            stats is None
+            or stats.particle_count != particle_count
+            or stats.node_count < 2
+            or not np.all(np.isfinite(acceleration))
+        ):
+            return CheckResult(
+                "Moteur Barnes-Hut",
+                False,
+                "arbre, statistiques ou accelerations invalides",
+            )
+    except Exception as error:  # noqa: BLE001 - diagnostic boundary by design
+        return CheckResult(
+            "Moteur Barnes-Hut",
+            False,
+            f"{type(error).__name__}: {error}",
+        )
+    return CheckResult(
+        "Moteur Barnes-Hut",
+        True,
+        "octree et parcours parallele natifs valides",
+    )
+
+
 def _run_graphics_import_smoke() -> CheckResult:
     """Import the complete graphics integration without opening a display."""
 
@@ -148,6 +197,7 @@ def run_runtime_checks(*, run_jit: bool = True) -> CompatibilityReport:
     checks.append(_run_graphics_import_smoke())
     if run_jit:
         checks.append(_run_numba_smoke())
+        checks.append(_run_barnes_hut_smoke())
 
     environment = {
         "machine": platform.machine() or "inconnue",

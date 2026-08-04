@@ -198,6 +198,13 @@ fixed-step integration, and invariant checks are documented in
 
 No multipole order beyond centre of mass is required for V1.
 
+This boundary is implemented at step 6 by `FlatOctree`, `build_octree`, and
+`BarnesHutSolver`. The compiled traversal always opens a node whose nested
+particle range contains the target, preventing self-attraction. Sequential and
+parallel kernels share the same target traversal and therefore produce bitwise
+identical outputs. Accuracy and benchmark evidence are documented in
+`BARNES_HUT.md`.
+
 ## 9. Galaxy scenario
 
 The default generator is deterministic from a configuration plus seed. It

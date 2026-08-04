@@ -14,13 +14,14 @@ Deterministic correctness tests run in the ordinary test command. Hardware and
 long-running tests use explicit markers. See `docs/SPECIFICATION.md` and
 `docs/ARCHITECTURE.md` for thresholds and release policy.
 
-At step 5 the ordinary suite also covers the strict particle-state boundary,
-analytic softened two-body forces, pair-force antisymmetry, exact/free motion,
-closed-form invariants, invalid numerical parameters, compiled-vs-Python kernel
-parity, and 100 complete binary orbits. Galaxy tests add deterministic component
-sampling, empirical distribution checks, analytic halo formulas, mass and
-momentum centring, rotation-curve consistency, and a 240-particle exact dynamic
-gate. Graphics tests continue to cover camera, input capture, deterministic
-visual particle generation, the mocked single GPU draw, resource ownership,
-runtime imports, launchers, and diagnostics. Real GLFW/OpenGL behaviour is
-checked with `docs/GRAPHICS_VALIDATION.md`.
+At step 6 the ordinary suite also covers the strict particle-state boundary,
+analytic softened two-body forces, pair-force antisymmetry, fixed-step leapfrog,
+closed-form invariants, 100 complete binary orbits, deterministic galaxy
+generation, flat-octree structure, coincident-particle termination, Barnes-Hut
+accuracy, sequential/parallel equality, and solver/integrator composition.
+Numba kernel bodies are excluded from Python line tracing because compiled
+execution bypasses the tracer; their outputs and edge cases remain covered by
+numerical tests. Graphics tests continue to cover camera, input capture, the
+mocked single GPU draw, resource ownership, runtime imports, launchers, and
+diagnostics. Real GLFW/OpenGL behaviour is checked with
+`docs/GRAPHICS_VALIDATION.md`.

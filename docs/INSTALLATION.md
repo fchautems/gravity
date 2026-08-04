@@ -1,9 +1,9 @@
-# Installation et jalon physique 5 de Gravity sous Windows
+# Installation et jalon Barnes-Hut 6 de Gravity sous Windows
 
-Ce guide couvre le jalon 5. Il installe le calcul compile et la pile graphique,
-valide le moteur gravitationnel exact ainsi que le generateur physique de
-galaxie, puis ouvre le premier nuage galactique 3D. Le moteur n'est pas encore
-relie au rendu : l'image reste donc celle du jalon 3 jusqu'a l'etape 7.
+Ce guide couvre le jalon 6. Il installe le calcul compile et la pile graphique,
+valide le moteur exact, le generateur physique de galaxie et Barnes-Hut, puis
+ouvre le premier nuage galactique 3D. Le moteur n'est pas encore relie au rendu :
+l'image reste donc celle du jalon 3 jusqu'a l'etape 7.
 
 ## Prerequis
 
@@ -45,9 +45,12 @@ Les tests sans materiel verifient aussi la camera, les gestes de souris, la
 generation des 10 000 points, le contrat d'un seul appel GPU, les shaders, les
 statistiques d'image et l'ordre de fermeture des ressources. Ils valident en
 plus les forces exactes, les invariants et la stabilite d'une orbite binaire sur
-100 periodes. Le jalon 5 ajoute la reproductibilite et les distributions de la
-galaxie, le halo analytique, la coherence des vitesses et un court essai
-dynamique exact de 240 particules.
+100 periodes. Les controles couvrent aussi la reproductibilite et les
+distributions de la galaxie, le halo analytique, la coherence des vitesses, la
+structure de l'octree, les particules confondues, la precision de Barnes-Hut face
+au calcul exact et l'egalite des parcours sequentiel et parallele. L'installation
+chauffe les deux noyaux Barnes-Hut afin d'eviter leur compilation au premier
+lancement physique.
 
 La fenetre reste ouverte a la fin pour permettre de lire le resultat.
 

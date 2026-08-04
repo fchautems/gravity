@@ -1,7 +1,7 @@
 # V1 galaxy initial conditions — step 5
 
-Step 5 creates the reproducible physical state that the exact and future
-Barnes-Hut solvers consume. It deliberately remains independent from the
+Step 5 creates the reproducible physical state that the exact and Barnes-Hut
+solvers consume. It deliberately remains independent from the
 step-3 renderer: `LANCER_GRAVITY.bat` still displays the synthetic visual field
 until the physics worker and snapshot exchange are connected in step 7.
 
@@ -142,6 +142,7 @@ This demonstrates coherent initial rotation without prompt collapse; long-run
 - `gravity.physics.CompositeGravitySolver`: explicit composition of
   self-gravity and external fields.
 
-Step 6 will implement and compare Barnes-Hut against the exact self-gravity
-solver. The analytic halo will be added identically after either self-gravity
-backend, so it cannot contaminate that accuracy comparison.
+Step 6 implements and compares Barnes-Hut against the exact self-gravity solver.
+The analytic halo is added identically after either self-gravity backend, so it
+does not contaminate that accuracy comparison. See `BARNES_HUT.md` for the
+measured gate.

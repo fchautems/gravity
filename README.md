@@ -10,8 +10,9 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 5 complete: the reproducible disk, bulge, central mass, and analytic halo
-produce coherent rotating initial conditions and pass the dynamic gate.**
+**Step 6 complete: the flat Barnes-Hut octree meets its exact-force error budget
+and is 26.9x faster than direct summation at 10,000 particles in the committed
+warmed benchmark.**
 
 `LANCER_GRAVITY.bat` now opens a styled, resizable 3D window with a smooth orbit
 camera, a French control panel, live frame metrics, and 10,000 synthetic
@@ -27,6 +28,12 @@ The new [galaxy model](docs/GALAXY_MODEL.md) deterministically samples an
 exponential disk and Hernquist bulge, computes a documented initial rotation
 curve, keeps its Plummer halo separate from self-gravity, and removes global
 position and velocity drift before the state reaches a solver.
+
+The [Barnes-Hut engine](docs/BARNES_HUT.md) rebuilds a three-dimensional flat
+octree for every force evaluation, traverses it in compiled parallel code, and
+records tree and force timings separately. At the default theta, the seeded
+10,000-particle benchmark reports 1.29% median acceleration error and 3.29% at
+the 95th percentile, inside the 2% / 5% V1 limits.
 
 ## Windows quick start
 
@@ -104,9 +111,9 @@ src/gravity/
 The packages now include the startup boundary, local diagnostics, orbit camera,
 input routing, deterministic synthetic field, ModernGL renderer, Dear ImGui
 shell, validated particle state, exact force solver, leapfrog integrator,
-physical-invariant diagnostics, analytic halo, and reproducible physical galaxy
-generator. Physics remains intentionally independent from graphics until the
-approximation and coupling gates are complete.
+physical-invariant diagnostics, analytic halo, reproducible physical galaxy
+generator, flat octree, and parallel Barnes-Hut solver. Physics remains
+intentionally independent from graphics until the step-7 coupling gate.
 
 ## Historical version
 

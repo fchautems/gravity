@@ -1,0 +1,93 @@
+{
+  "benchmark": "gravity-step6-barnes-hut",
+  "configuration": {
+    "depth_limit": 32,
+    "direct_limit": 10000,
+    "leaf_capacity": 8,
+    "repeats": 21,
+    "seed": 20260806,
+    "theta": 0.7
+  },
+  "environment": {
+    "machine": "x86_64",
+    "numba": "0.66.0",
+    "numba_threads": 9,
+    "numpy": "2.4.6",
+    "operating_system": "Linux-6.12.13-x86_64-with-glibc2.39",
+    "python": "3.12.13"
+  },
+  "points": [
+    {
+      "accepted_nodes_per_particle": 1.79,
+      "direct_particles_per_particle": 73.86,
+      "exact_median_ms": 0.040950999846245395,
+      "force_median_ms": 0.055593000070075504,
+      "force_p95_ms": 0.05896800030313898,
+      "leaf_count": 36,
+      "median_relative_error": 0.004172645461609732,
+      "node_count": 50,
+      "particle_count": 100,
+      "percentile_95_relative_error": 0.023455098707748062,
+      "speedup_over_exact": 0.291655092512224,
+      "total_median_ms": 0.14040899986866862,
+      "total_p95_ms": 0.16520500003025518,
+      "tree_build_median_ms": 0.05944800022916752,
+      "tree_build_p95_ms": 0.07037399973341962,
+      "tree_megabytes": 0.0057697296142578125
+    },
+    {
+      "accepted_nodes_per_particle": 29.476,
+      "direct_particles_per_particle": 278.95,
+      "exact_median_ms": 3.0973759999142203,
+      "force_median_ms": 2.2924210002202017,
+      "force_p95_ms": 2.4288549998345843,
+      "leaf_count": 311,
+      "median_relative_error": 0.012793571949681372,
+      "node_count": 405,
+      "particle_count": 1000,
+      "percentile_95_relative_error": 0.031422580072319836,
+      "speedup_over_exact": 1.2502446098268947,
+      "total_median_ms": 2.4774159996923117,
+      "total_p95_ms": 2.6224120001643314,
+      "tree_build_median_ms": 0.125485999888042,
+      "tree_build_p95_ms": 0.1478799999858893,
+      "tree_megabytes": 0.04818439483642578
+    },
+    {
+      "accepted_nodes_per_particle": 125.3875,
+      "direct_particles_per_particle": 477.019,
+      "exact_median_ms": 309.888059000059,
+      "force_median_ms": 10.062783000194031,
+      "force_p95_ms": 15.139000000090164,
+      "leaf_count": 3406,
+      "median_relative_error": 0.012906216187075228,
+      "node_count": 4249,
+      "particle_count": 10000,
+      "percentile_95_relative_error": 0.032941907185057503,
+      "speedup_over_exact": 26.92478199819872,
+      "total_median_ms": 11.509398999805853,
+      "total_p95_ms": 16.455944999961503,
+      "tree_build_median_ms": 1.0730130002229998,
+      "tree_build_p95_ms": 1.375990999804344,
+      "tree_megabytes": 0.5017709732055664
+    },
+    {
+      "accepted_nodes_per_particle": 222.0407,
+      "direct_particles_per_particle": 508.93958,
+      "exact_median_ms": null,
+      "force_median_ms": 61.83366599998408,
+      "force_p95_ms": 70.73379300027227,
+      "leaf_count": 17939,
+      "median_relative_error": null,
+      "node_count": 21762,
+      "particle_count": 50000,
+      "percentile_95_relative_error": null,
+      "speedup_over_exact": null,
+      "total_median_ms": 68.73504699979094,
+      "total_p95_ms": 78.12041399984082,
+      "tree_build_median_ms": 6.101595000018278,
+      "tree_build_p95_ms": 6.324545000097714,
+      "tree_megabytes": 2.5606250762939453
+    }
+  ]
+}

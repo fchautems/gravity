@@ -126,9 +126,12 @@ They are budgets, not claims made before implementation.
 | Working set for default scenario, excluding display-driver allocation | < 500 MB |
 | Unattended default run | 30 minutes without crash, hang, NaN, or unbounded log growth |
 
-The exact physics-steps-per-second target is set at the end of Barnes-Hut step
-6 using measurements from the reference PC. Responsiveness remains a hard gate
-even if the simulation clock advances more slowly than real time.
+The step-6 solver-only gate requires Barnes-Hut to be at least 10x faster than
+the exact solver at 10,000 particles on the same warmed host; the measured
+baseline is 26.92x. Absolute physics steps per second are recorded on the
+reference Windows PC during step 7, when the worker competes with the real UI
+and renderer. Responsiveness remains a hard gate even if the simulation clock
+advances more slowly than real time.
 
 ### Numerical reference tests
 
@@ -138,6 +141,7 @@ even if the simulation clock advances more slowly than real time.
 | Isolated direct-solver centre-of-mass drift | <= 1e-9 in normalized test units |
 | Direct pair-force antisymmetry | within `float64` test tolerance |
 | Barnes-Hut acceleration error, default theta, seeded validation sets | median <= 2%; 95th percentile <= 5% |
+| Barnes-Hut speedup over exact solver, warmed 10,000-particle same-host case | >= 10x |
 | Scenario reproducibility | exact initial arrays for a fixed seed and environment |
 
 Barnes-Hut relative errors exclude reference accelerations below a documented
@@ -148,7 +152,7 @@ near-zero floor; absolute error is reported for those samples.
 | Setting | V1 range | Default |
 |---|---:|---:|
 | Visible particles | 100 to 50,000 | 10,000 |
-| Barnes-Hut theta | 0.3 to 1.2 | chosen by validation, initially 0.7 |
+| Barnes-Hut theta | 0.3 to 1.2 | 0.7, validated at step 6 |
 | Time scale | paused to 20x visual speed | 1x |
 | Seed | unsigned 32-bit integer | fixed documented seed |
 | Galaxy softening | 0.02 to 0.25 | 0.08 |

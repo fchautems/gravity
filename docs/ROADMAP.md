@@ -13,7 +13,7 @@ earlier one.
 | 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | **Complete — Windows validation passed** |
 | 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | **Complete** |
 | 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | **Complete** |
-| 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | Next |
+| 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | **Complete** |
 | 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | Planned |
 | 8 | Complete user controls | Basic/advanced controls, validation, presets, settings persistence, and French help text are usable. | Planned |
 | 9 | Visual quality | Colour, point sprites, glow/trails, fullscreen, and screenshots are polished and individually measurable. | Planned |
@@ -125,6 +125,32 @@ of its initial value after 200 steps while its median angular travel reaches
 `0.513` radians. See `docs/GALAXY_MODEL.md` for formulas, defaults, caveats, and
 the complete measured evidence.
 
+## Step 6 output
+
+Step 6 adds the measured approximation used by the future interactive worker:
+
+- `FlatOctree` stores cubic bounds, child indices, nested particle ranges,
+  depths, masses, and centres of mass in immutable contiguous arrays;
+- the deterministic compiled builder partitions only occupied octants, grows
+  storage safely for adversarial distributions, and stops coincident particles
+  at a validated depth limit;
+- `BarnesHutSolver` always opens nodes containing the target particle, evaluates
+  leaf neighbours directly, and accepts distant monopoles with configurable
+  theta;
+- sequential traversal avoids overhead for small systems, while parallel Numba
+  traversal handles the interactive range with bitwise-identical results;
+- `BarnesHutStats` separates tree-build and force time and records structural
+  and interaction counts;
+- exact-versus-approximate reports isolate near-zero reference accelerations and
+  enforce the 2% median / 5% 95th-percentile gate.
+
+At this gate the complete automated suite contains 188 tests with 88.90% branch
+coverage. The 512-particle galaxy validation measures 1.142% median and 3.125%
+95th-percentile error. In the committed nine-thread benchmark, the default
+10,000-particle case takes 11.509 ms versus 309.888 ms for the exact solver, a
+26.92x speedup, with 1.291% / 3.294% error. See `docs/BARNES_HUT.md` and the
+machine-readable benchmark baseline for the complete method and caveats.
+
 ## Validation cadence
 
 The owner receives a testable build at the points where local hardware or user
@@ -153,6 +179,9 @@ and renders the synthetic 10,000-particle field within budget.
 Barnes-Hut becomes the default only if it meets both the documented error
 threshold and a measured performance advantage over the exact reference at
 relevant particle counts.
+
+This gate passed at theta 0.7: both seeded accuracy sets are inside budget and
+the same-host 10,000-particle benchmark is 26.92x faster than the exact solver.
 
 ### Backend gate (step 11)
 

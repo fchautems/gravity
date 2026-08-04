@@ -167,6 +167,20 @@ def test_physics_snapshots_update_or_resize_the_single_gpu_buffer() -> None:
     renderer.release()
 
 
+def test_new_generation_rebuilds_visual_attributes_even_when_count_is_unchanged() -> None:
+    context = FakeContext()
+    initial = np.zeros((8, 3), dtype=np.float32)
+    renderer = ParticleRenderer(context, physical_particle_field(initial))
+    old_buffer = context.buffer_resource
+
+    moved = np.full((8, 3), 4.0, dtype=np.float32)
+    renderer.update_positions(moved, reset_visuals=True)
+    assert old_buffer.released
+    assert renderer.particle_count == 8
+    assert renderer.upload_count == 2
+    renderer.release()
+
+
 def test_graphics_info_and_shader_contract() -> None:
     renderer = ParticleRenderer(FakeContext(), _field(2))  # type: ignore[arg-type]
     info = renderer.graphics_info()

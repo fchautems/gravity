@@ -9,6 +9,8 @@ from enum import StrEnum
 import numpy as np
 import numpy.typing as npt
 
+from gravity.core.experiment import ExperimentConfig
+
 type RenderPositionArray = npt.NDArray[np.float32]
 
 
@@ -37,6 +39,7 @@ class SimulationStatus:
     paused: bool
     time_scale: float
     physics_seconds: float
+    experiment: ExperimentConfig | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.solver_mode, SolverMode):
@@ -55,6 +58,16 @@ class SimulationStatus:
                 raise ValueError(f"{name} must be finite and non-negative")
         if not math.isfinite(self.time_scale) or self.time_scale <= 0.0:
             raise ValueError("time_scale must be finite and positive")
+        if self.experiment is not None and not isinstance(self.experiment, ExperimentConfig):
+            raise TypeError("experiment must be an ExperimentConfig or None")
+
+    @property
+    def experiment_config(self) -> ExperimentConfig:
+        """Return the active reproducible setup, including for legacy test statuses."""
+
+        if self.experiment is not None:
+            return self.experiment
+        return ExperimentConfig(particle_count=max(100, self.particle_count))
 
     @property
     def physics_ms(self) -> float:

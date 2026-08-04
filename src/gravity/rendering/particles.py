@@ -111,7 +111,7 @@ class ParticleRenderer:
             version=str(values.get("GL_VERSION", "inconnue")),
         )
 
-    def update_positions(self, positions: np.ndarray) -> None:
+    def update_positions(self, positions: np.ndarray, *, reset_visuals: bool = False) -> None:
         """Upload one complete immutable physics snapshot to the GPU."""
 
         if self._released:
@@ -124,7 +124,7 @@ class ParticleRenderer:
         if not values.flags.c_contiguous or not np.all(np.isfinite(values)):
             raise ValueError("render positions must be finite and C-contiguous")
 
-        if values.shape[0] != self._field.count:
+        if values.shape[0] != self._field.count or reset_visuals:
             self._vertex_array.release()
             self._buffer.release()
             self._field = physical_particle_field(values)

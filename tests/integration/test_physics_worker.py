@@ -12,6 +12,7 @@ from gravity.app.physics_worker import (
     PhysicsWorker,
     SimulationWorkerError,
 )
+from gravity.core.experiment import ExperimentConfig, ScenarioKind
 from gravity.core.simulation import RenderSnapshot, SolverMode
 from gravity.core.state import FloatArray
 
@@ -124,5 +125,58 @@ def test_worker_failure_is_relayed_instead_of_disappearing() -> None:
         with pytest.raises(SimulationWorkerError) as captured:
             worker.wait_for_snapshot(timeout=1.0)
         assert isinstance(captured.value.__cause__, RuntimeError)
+    finally:
+        worker.shutdown()
+
+
+def test_worker_applies_reproducible_experiments_and_restores_full_count_after_exact() -> None:
+    worker = PhysicsWorker(
+        logging.getLogger("worker-experiment-test"),
+        solver_factory=lambda _mode: ZeroGravitySolver(),
+        barnes_hut_particles=300,
+        exact_particles=200,
+    )
+    worker.start()
+    try:
+        worker.wait_for_snapshot()
+        worker.pause()
+        _wait_for(worker, lambda item: item.status.paused)
+        experiment = ExperimentConfig(ScenarioKind.RING, 300, 99)
+        worker.set_experiment(experiment)
+        ring = _wait_for(
+            worker,
+            lambda item: item.status.experiment == experiment,
+        )
+        assert ring.status.particle_count == 300
+        assert ring.status.step_count == 0
+        initial_ring_positions = ring.positions.copy()
+
+        worker.reset()
+        repeated = _wait_for(
+            worker,
+            lambda item: item.status.generation == ring.status.generation + 1,
+        )
+        np.testing.assert_array_equal(repeated.positions, initial_ring_positions)
+
+        worker.set_experiment(ExperimentConfig(ScenarioKind.RING, 300, 100))
+        rerolled = _wait_for(
+            worker,
+            lambda item: item.status.experiment is not None and item.status.experiment.seed == 100,
+        )
+        assert not np.array_equal(rerolled.positions, initial_ring_positions)
+
+        worker.set_solver(SolverMode.EXACT)
+        exact = _wait_for(worker, lambda item: item.status.solver_mode is SolverMode.EXACT)
+        assert exact.status.particle_count == 200
+        assert exact.status.experiment == ExperimentConfig(ScenarioKind.RING, 300, 100)
+
+        worker.set_solver(SolverMode.BARNES_HUT)
+        restored = _wait_for(
+            worker,
+            lambda item: item.status.solver_mode is SolverMode.BARNES_HUT,
+        )
+        assert restored.status.particle_count == 300
+        assert restored.status.experiment == exact.status.experiment
+        assert restored.status.paused
     finally:
         worker.shutdown()

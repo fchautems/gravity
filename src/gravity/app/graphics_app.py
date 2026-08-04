@@ -48,6 +48,8 @@ def _dispatch_simulation_actions(
         worker.set_time_scale(actions.time_scale)
     if actions.solver_mode is not None:
         worker.set_solver(actions.solver_mode)
+    if actions.experiment is not None:
+        worker.set_experiment(actions.experiment)
 
 
 def run_graphics_app(logger: logging.Logger) -> None:
@@ -109,7 +111,12 @@ def run_graphics_app(logger: logging.Logger) -> None:
             physics_worker.raise_if_failed()
             newest_snapshot = physics_worker.latest_snapshot()
             if newest_snapshot is not None:
-                particle_renderer.update_positions(newest_snapshot.positions)
+                particle_renderer.update_positions(
+                    newest_snapshot.positions,
+                    reset_visuals=(
+                        newest_snapshot.status.generation != current_snapshot.status.generation
+                    ),
+                )
                 current_snapshot = newest_snapshot
 
             window.poll_events()

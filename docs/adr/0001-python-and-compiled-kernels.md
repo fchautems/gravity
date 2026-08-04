@@ -35,7 +35,7 @@ That is an intentional performance design, not a leak of UI concerns into
 physics.
 
 The backend boundary remains replaceable. GPU, C++, or Rust work is considered
-only after the reproducible benchmarks in roadmap step 11 show a missed V1 goal.
+only after reproducible release benchmarks show a missed V1 goal.
 
 ## Rejected alternatives
 
@@ -44,4 +44,3 @@ only after the reproducible benchmarks in roadmap step 11 show a missed V1 goal.
 - Immediate full C++/Rust rewrite: higher cost before measured need.
 - CUDA as the first backend: ties the first working version to one GPU stack and
   skips the exact CPU reference.
-

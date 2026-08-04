@@ -7,12 +7,13 @@ import math
 import queue
 import threading
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum, auto
 from time import perf_counter
 
 import numpy as np
 
+from gravity.core.experiment import ExperimentConfig
 from gravity.core.simulation import RenderSnapshot, SimulationStatus, SolverMode
 from gravity.physics import (
     AccelerationSolver,
@@ -21,7 +22,7 @@ from gravity.physics import (
     ExactGravitySolver,
     LeapfrogIntegrator,
 )
-from gravity.scenarios import GalaxyConfig, GalaxyInitialConditions, generate_spiral_galaxy
+from gravity.scenarios import GeneratedScenario, generate_experiment
 
 DEFAULT_INTERACTIVE_PARTICLES = 10_000
 EXACT_PARTICLE_LIMIT = 1_000
@@ -30,7 +31,7 @@ MAX_TIME_SCALE = 2.5
 MAX_SCHEDULE_LAG_STEPS = 4
 WORKER_JOIN_TIMEOUT = 5.0
 
-type ScenarioFactory = Callable[[GalaxyConfig], GalaxyInitialConditions]
+type ScenarioFactory = Callable[[ExperimentConfig], GeneratedScenario]
 type SolverFactory = Callable[[SolverMode], AccelerationSolver]
 
 
@@ -45,18 +46,20 @@ class _CommandKind(Enum):
     RESET = auto()
     SET_TIME_SCALE = auto()
     SET_SOLVER = auto()
+    SET_EXPERIMENT = auto()
     STOP = auto()
 
 
 @dataclass(frozen=True, slots=True)
 class _Command:
     kind: _CommandKind
-    value: float | SolverMode | None = None
+    value: float | SolverMode | ExperimentConfig | None = None
 
 
 @dataclass(slots=True)
 class _Runtime:
-    galaxy: GalaxyInitialConditions
+    scenario: GeneratedScenario
+    experiment: ExperimentConfig
     self_gravity: AccelerationSolver
     integrator: LeapfrogIntegrator
     solver_mode: SolverMode
@@ -97,10 +100,11 @@ class PhysicsWorker:
         self,
         logger: logging.Logger,
         *,
-        scenario_factory: ScenarioFactory = generate_spiral_galaxy,
+        scenario_factory: ScenarioFactory = generate_experiment,
         solver_factory: SolverFactory = _default_solver_factory,
         barnes_hut_particles: int = DEFAULT_INTERACTIVE_PARTICLES,
         exact_particles: int = EXACT_PARTICLE_LIMIT,
+        initial_experiment: ExperimentConfig | None = None,
     ) -> None:
         self._logger = logger
         self._scenario_factory = scenario_factory
@@ -111,6 +115,13 @@ class PhysicsWorker:
         self._exact_particles = _validate_particle_count(exact_particles, "exact_particles")
         if self._exact_particles > EXACT_PARTICLE_LIMIT:
             raise ValueError(f"exact_particles cannot exceed {EXACT_PARTICLE_LIMIT}")
+        if initial_experiment is not None and not isinstance(initial_experiment, ExperimentConfig):
+            raise TypeError("initial_experiment must be an ExperimentConfig or None")
+        self._initial_experiment = (
+            ExperimentConfig(particle_count=self._barnes_hut_particles)
+            if initial_experiment is None
+            else initial_experiment
+        )
 
         self._commands: queue.Queue[_Command] = queue.Queue()
         self._snapshots: queue.Queue[RenderSnapshot] = queue.Queue(maxsize=1)
@@ -152,6 +163,11 @@ class PhysicsWorker:
         if not isinstance(mode, SolverMode):
             raise TypeError("mode must be a SolverMode")
         self._commands.put(_Command(_CommandKind.SET_SOLVER, mode))
+
+    def set_experiment(self, experiment: ExperimentConfig) -> None:
+        if not isinstance(experiment, ExperimentConfig):
+            raise TypeError("experiment must be an ExperimentConfig")
+        self._commands.put(_Command(_CommandKind.SET_EXPERIMENT, experiment))
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -211,33 +227,40 @@ class PhysicsWorker:
             self._stop_event.set()
             self._logger.exception("Physics worker failed")
 
-    def _particle_count(self, mode: SolverMode) -> int:
+    def _particle_count(self, mode: SolverMode, experiment: ExperimentConfig) -> int:
         if mode is SolverMode.BARNES_HUT:
-            return self._barnes_hut_particles
-        return self._exact_particles
+            return experiment.particle_count
+        return min(experiment.particle_count, self._exact_particles)
 
     def _create_runtime(
         self,
         mode: SolverMode,
+        experiment: ExperimentConfig,
         *,
         generation: int,
         paused: bool,
         time_scale: float,
     ) -> _Runtime:
-        config = GalaxyConfig(particle_count=self._particle_count(mode))
-        galaxy = self._scenario_factory(config)
+        active_experiment = replace(
+            experiment,
+            particle_count=self._particle_count(mode, experiment),
+        )
+        scenario = self._scenario_factory(active_experiment)
         self_gravity = self._solver_factory(mode)
-        solver = CompositeGravitySolver(self_gravity, (galaxy.mass_model.halo,))
-        integrator = LeapfrogIntegrator(solver, config.time_step, config.softening)
+        solver = CompositeGravitySolver(self_gravity, scenario.external_fields)
+        integrator = LeapfrogIntegrator(solver, scenario.time_step, scenario.softening)
         self._logger.info(
-            "Physics generation %s ready: solver=%s, particles=%s, dt=%s",
+            "Physics generation %s ready: solver=%s, scenario=%s, particles=%s, seed=%s, dt=%s",
             generation,
             mode.value,
-            config.particle_count,
-            config.time_step,
+            experiment.scenario.value,
+            active_experiment.particle_count,
+            experiment.seed,
+            scenario.time_step,
         )
         return _Runtime(
-            galaxy=galaxy,
+            scenario=scenario,
+            experiment=experiment,
             self_gravity=self_gravity,
             integrator=integrator,
             solver_mode=mode,
@@ -247,7 +270,7 @@ class PhysicsWorker:
         )
 
     def _publish(self, runtime: _Runtime) -> None:
-        state = runtime.galaxy.state
+        state = runtime.scenario.state
         positions = np.ascontiguousarray(state.positions, dtype=np.float32)
         status = SimulationStatus(
             solver_mode=runtime.solver_mode,
@@ -258,6 +281,7 @@ class PhysicsWorker:
             paused=runtime.paused,
             time_scale=runtime.time_scale,
             physics_seconds=runtime.physics_seconds,
+            experiment=runtime.experiment,
         )
         snapshot = RenderSnapshot(positions, status)
         try:
@@ -271,7 +295,7 @@ class PhysicsWorker:
 
     def _advance_once(self, runtime: _Runtime) -> None:
         started = perf_counter()
-        runtime.integrator.step(runtime.galaxy.state)
+        runtime.integrator.step(runtime.scenario.state)
         runtime.physics_seconds = perf_counter() - started
         self._publish(runtime)
 
@@ -290,6 +314,7 @@ class PhysicsWorker:
         elif command.kind is _CommandKind.RESET:
             runtime = self._create_runtime(
                 runtime.solver_mode,
+                runtime.experiment,
                 generation=runtime.generation + 1,
                 paused=runtime.paused,
                 time_scale=runtime.time_scale,
@@ -308,6 +333,20 @@ class PhysicsWorker:
             if mode is not runtime.solver_mode:
                 runtime = self._create_runtime(
                     mode,
+                    runtime.experiment,
+                    generation=runtime.generation + 1,
+                    paused=runtime.paused,
+                    time_scale=runtime.time_scale,
+                )
+                self._publish(runtime)
+        elif command.kind is _CommandKind.SET_EXPERIMENT:
+            experiment = command.value
+            if not isinstance(experiment, ExperimentConfig):
+                raise TypeError("SET_EXPERIMENT requires an ExperimentConfig")
+            if experiment != runtime.experiment:
+                runtime = self._create_runtime(
+                    runtime.solver_mode,
+                    experiment,
                     generation=runtime.generation + 1,
                     paused=runtime.paused,
                     time_scale=runtime.time_scale,
@@ -318,6 +357,7 @@ class PhysicsWorker:
     def _run(self) -> None:
         runtime = self._create_runtime(
             SolverMode.BARNES_HUT,
+            self._initial_experiment,
             generation=0,
             paused=False,
             time_scale=1.0,
@@ -352,7 +392,7 @@ class PhysicsWorker:
             if now < next_step_at:
                 continue
             self._advance_once(runtime)
-            interval = runtime.galaxy.config.time_step / runtime.time_scale
+            interval = runtime.scenario.time_step / runtime.time_scale
             next_step_at += interval
             minimum_schedule = perf_counter() - MAX_SCHEDULE_LAG_STEPS * interval
             if next_step_at < minimum_schedule:

@@ -51,7 +51,7 @@ macOS packaging are not release gates.
 | F-03 | Default scenario | `Galaxie spirale` creates 10,000 finite particles and starts with stable, coherent rotation. |
 | F-04 | Camera | Orbit, pan, zoom, reset view, and fullscreen are smooth and do not alter simulation state. |
 | F-05 | Time controls | Pause, resume, single-step, reset, and time-scale controls behave deterministically. |
-| F-06 | Regeneration | Particle count, seed, galaxy size, mass model, and structure parameters clearly require regeneration. |
+| F-06 | Regeneration | Scenario, particle count, seed, galaxy size, mass model, and structure parameters clearly require regeneration. |
 | F-07 | Live controls | Camera, particle size, exposure, colour mode, trails/glow, and time scale can change without regeneration. |
 | F-08 | Presets | `Qualité`, `Équilibré`, and `Performance` choose coherent visual and numerical settings. |
 | F-09 | Observability | The UI exposes FPS, physics steps/s, particle count, simulation time, solver, and tree-build/force timing. |
@@ -156,7 +156,7 @@ near-zero floor; absolute error is reported for those samples.
 | Visible particles | 100 to 50,000 | 10,000 |
 | Barnes-Hut theta | 0.3 to 1.2 | 0.7, validated at step 6 |
 | Time scale | paused to 20x visual speed | 1x |
-| Seed | unsigned 32-bit integer | fixed documented seed |
+| Seed exposed in the UI | non-negative signed 32-bit integer | fixed documented seed |
 | Galaxy softening | 0.02 to 0.25 | 0.08 |
 | Fixed galaxy time step | 0.0025 to 0.08 | 0.02 |
 | Disk outer radius | 6.0 to 24.0 | 10.8 |
@@ -189,7 +189,8 @@ configuration, warm-up state, and measurement distribution.
 ## 11. Explicitly outside V1
 
 - particle collision or merger logic;
-- two-galaxy collisions;
+- finite-size particle collision, bounce, fusion, or merger rules in the V1
+  baseline (the two-galaxy presets remain collisionless N-body encounters);
 - gas or hydrodynamics;
 - relativistic gravity or black-hole accretion;
 - compute-shader, CUDA, or distributed physics;

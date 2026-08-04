@@ -85,13 +85,18 @@ This model is implemented at step 7 by `PhysicsWorker`, `RenderSnapshot`, and
 newer state atomically replaces an unconsumed older copy.
 
 Commands are values such as `Pause`, `Resume`, `SingleStep`, `Reset`,
-`Regenerate(config)`, and `SetTimeScale`. New scenario configuration replaces a
-whole validated object rather than mutating shared fields piecemeal.
+`SetExperiment(config)`, and `SetTimeScale`. `ExperimentConfig` contains the
+scenario kind, Barnes-Hut particle count, and random seed. New scenario
+configuration replaces this whole validated object rather than mutating shared
+fields piecemeal.
 
-Barnes-Hut is the only automatic startup mode and uses 10,000 particles. The
-exact solver is an explicit advanced comparison command and has a hard 1,000
-particle ceiling. Switching backend creates a new seeded runtime rather than
-mutating a live solver behind the integrator.
+Barnes-Hut is the only automatic startup mode and uses 10,000 particles by
+default. The exact solver is an explicit advanced comparison command and has a
+hard 1,000-particle ceiling. Barnes-Hut experiments may request 100 to 50,000
+particles.
+Switching backend creates the same seeded scenario at the safe active count
+rather than mutating a live solver behind the integrator; returning restores the
+full requested Barnes-Hut count.
 
 If the renderer is faster than physics it reuses the newest snapshot. If physics
 is faster, old unpublished snapshots may be dropped; physics state itself is

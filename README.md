@@ -10,19 +10,22 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 7 complete: the 10,000 visible particles now evolve under the real
-Barnes-Hut gravity engine through a non-blocking fixed-step worker.**
+**Step 8 complete: Gravity is now a reproducible initial-condition laboratory
+with eight physical scenarios and a selectable Barnes-Hut particle count.**
 
-`LANCER_GRAVITY.bat` now opens a styled, resizable 3D window with a smooth orbit
-camera, a French control panel, live frame and physics metrics, and 10,000
-physical particles submitted in one GPU draw. The worker publishes only complete
-immutable snapshots; rendering reuses the newest one and never waits for a
-force calculation.
+`LANCER_GRAVITY.bat` opens a styled, resizable 3D window with a smooth orbit
+camera, a French control panel, live frame and physics metrics, and 100 to 50,000
+physical particles submitted in one GPU draw. Eight seeded starting conditions
+include the spiral galaxy, disk, ring, sphere, two galaxy encounters, a bound
+random cloud, and total chaos. The worker publishes only complete immutable
+snapshots; rendering reuses the newest one and never waits for a force
+calculation.
 
-Barnes-Hut is the automatic and recommended backend. The exact `O(N²)` engine is
+Barnes-Hut remains the automatic and recommended backend. The exact `O(N²)` engine is
 available only inside the collapsed advanced-physics section as an intentional
 comparison mode. Activating it regenerates the scenario with a hard limit of
-1,000 particles; returning to Barnes-Hut restores the 10,000-particle default.
+1,000 particles; returning to Barnes-Hut restores the configured experiment and
+its full requested count.
 
 The exact engine stores state in validated `float64` arrays, evaluates every
 unordered pair once in compiled code, and advances it with kick-drift-kick
@@ -58,12 +61,17 @@ troubleshooting path.
 - drag with the right or middle button to pan;
 - use the wheel to zoom;
 - use `Pause`, `Avancer d’un pas`, `Recommencer`, and `Recentrer la vue`;
+- choose a starting scenario, Barnes-Hut particle count, and visible random seed;
+- use `Recommencer à l’identique` or `Nouveau tirage` to distinguish repeat
+  from reroll;
 - resize and maximize the window while watching the FPS overlay.
 - optionally open `Physique avancée` to test the exact 1,000-particle reference,
   then return to Barnes-Hut.
 
-The short [step-7 validation checklist](docs/STEP7_VALIDATION.md) records the
-expected physical result and the useful information to report.
+The short [step-8 validation checklist](docs/STEP8_VALIDATION.md) covers the
+catalogue, repeat/reroll semantics, count changes, and exact-mode guard. The
+[initial-scenario reference](docs/INITIAL_SCENARIOS.md) records what each preset
+means physically.
 
 ## V1 commitments
 
@@ -107,7 +115,7 @@ is validated before the next one is added. See the [roadmap](docs/ROADMAP.md).
 ```text
 src/gravity/
 ├── app/          # Lifecycle and orchestration
-├── core/         # Stable data contracts and configuration
+├── core/         # Stable state, experiment, and snapshot contracts
 ├── diagnostics/  # Logging, metrics, and timing
 ├── physics/      # Solvers and integrators
 ├── rendering/    # OpenGL renderer, shaders, and camera
@@ -119,8 +127,8 @@ The packages now include the startup boundary, local diagnostics, orbit camera,
 input routing, dynamic ModernGL renderer, Dear ImGui shell, validated particle
 state, exact force solver, leapfrog integrator, physical-invariant diagnostics,
 analytic halo, reproducible physical galaxy generator, flat octree, parallel
-Barnes-Hut solver, bounded snapshot exchange, command queue, and clean worker
-lifecycle.
+Barnes-Hut solver, eight-scenario catalogue, immutable experiment commands,
+bounded snapshot exchange, command queue, and clean worker lifecycle.
 
 ## Historical version
 

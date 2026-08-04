@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from imgui_bundle import imgui
 
+from gravity.core.experiment import ExperimentConfig, ScenarioKind
 from gravity.core.simulation import SimulationStatus, SolverMode
 from gravity.diagnostics.frame_stats import FrameStats
 from gravity.rendering.particles import GraphicsInfo
@@ -27,16 +28,22 @@ def _begin_headless_frame() -> None:
     imgui.new_frame()
 
 
-def _simulation(*, paused: bool = False) -> SimulationStatus:
+def _simulation(
+    *,
+    paused: bool = False,
+    generation: int = 0,
+    experiment: ExperimentConfig | None = None,
+) -> SimulationStatus:
     return SimulationStatus(
         solver_mode=SolverMode.BARNES_HUT,
         particle_count=10_000,
         simulation_time=1.25,
         step_count=42,
-        generation=0,
+        generation=generation,
         paused=paused,
         time_scale=1.0,
         physics_seconds=0.011,
+        experiment=experiment,
     )
 
 
@@ -80,3 +87,25 @@ def test_hidden_panel_builds_its_settings_surface(imgui_context: None) -> None:
     assert not actions.reset_camera
     assert not actions.reset_simulation
     assert not state.panel_visible
+
+
+def test_new_generation_synchronizes_the_editable_experiment_draft(
+    imgui_context: None,
+) -> None:
+    configure_theme(1.0)
+    _begin_headless_frame()
+    state = UiState(panel_visible=False)
+    experiment = ExperimentConfig(ScenarioKind.RING, 5_000, 4321)
+    draw_control_panel(
+        state,
+        FrameStats(),
+        simulation=_simulation(generation=7, experiment=experiment),
+        graphics=GraphicsInfo(330, "GPU", "Vendor", "3.3"),
+        window_size=(1280, 800),
+        dpi_scale=1.0,
+    )
+    imgui.render()
+    assert state.draft_scenario is ScenarioKind.RING
+    assert state.draft_particle_count == 5_000
+    assert state.draft_seed == 4321
+    assert state.synced_generation == 7

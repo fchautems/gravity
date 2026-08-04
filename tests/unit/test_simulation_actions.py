@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from gravity.app.graphics_app import _dispatch_simulation_actions
+from gravity.core.experiment import ExperimentConfig, ScenarioKind
 from gravity.core.simulation import SimulationStatus, SolverMode
 from gravity.ui.panel import UiActions
 
@@ -27,6 +28,9 @@ class RecordingWorker:
     def set_solver(self, mode: SolverMode) -> None:
         self.calls.append(("solver", mode))
 
+    def set_experiment(self, experiment: ExperimentConfig) -> None:
+        self.calls.append(("experiment", experiment))
+
 
 def _status(*, paused: bool) -> SimulationStatus:
     return SimulationStatus(
@@ -43,12 +47,14 @@ def _status(*, paused: bool) -> SimulationStatus:
 
 def test_controller_translates_all_ui_actions_without_ui_calling_physics() -> None:
     worker = RecordingWorker()
+    experiment = ExperimentConfig(ScenarioKind.RING, 2_000, 12)
     actions = UiActions(
         toggle_pause=True,
         reset_simulation=True,
         single_step=True,
         time_scale=1.5,
         solver_mode=SolverMode.EXACT,
+        experiment=experiment,
     )
     _dispatch_simulation_actions(worker, _status(paused=False), actions)  # type: ignore[arg-type]
     assert worker.calls == [
@@ -57,6 +63,7 @@ def test_controller_translates_all_ui_actions_without_ui_calling_physics() -> No
         "step",
         ("speed", 1.5),
         ("solver", SolverMode.EXACT),
+        ("experiment", experiment),
     ]
 
     worker.calls.clear()

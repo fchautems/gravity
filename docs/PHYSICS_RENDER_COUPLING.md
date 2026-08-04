@@ -39,6 +39,7 @@ The worker consumes typed commands only between complete steps:
 - deterministic reset;
 - time scale from `0.1x` to `2.5x` without changing the fixed step;
 - explicit backend switch;
+- atomic experiment replacement (scenario, Barnes-Hut count, and seed);
 - bounded clean shutdown.
 
 At `1.0x`, the scheduler targets one `0.02` simulation step per `0.02` wall
@@ -54,16 +55,17 @@ Barnes-Hut is constructed automatically at every application start:
 
 | Mode | Access | Particles | Purpose |
 |---|---|---:|---|
-| Barnes-Hut | automatic default | 10,000 | normal interactive simulation |
+| Barnes-Hut | automatic default | 100–50,000; 10,000 default | normal interactive simulation |
 | Exact `O(N²)` | advanced section, explicit button | at most 1,000 | reference comparison |
 
 The advanced section is collapsed by default. There is no startup prompt and no
 ordinary control that can accidentally select the exact backend. Its particle
 limit is enforced inside `PhysicsWorker`, not merely in the button label.
-Returning to Barnes-Hut regenerates the normal 10,000-particle scenario.
+Returning to Barnes-Hut regenerates the selected scenario at its requested count.
 
-Both modes use the same `GalaxyConfig`, analytic Plummer halo, leapfrog
-integrator, softening, and fixed time step. Only particle self-gravity changes.
+Both modes use the same scenario kind, seed, scenario-specific analytic fields,
+leapfrog integrator, softening, and fixed time step. Only the safe active count
+and particle self-gravity backend change.
 
 ## Failure and ownership rules
 

@@ -15,11 +15,12 @@ earlier one.
 | 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | **Complete** |
 | 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | **Complete** |
 | 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | **Complete** |
-| 8 | Complete user controls | Basic/advanced controls, validation, presets, settings persistence, and French help text are usable. | Planned |
-| 9 | Visual quality | Colour, point sprites, glow/trails, fullscreen, and screenshots are polished and individually measurable. | Planned |
-| 10 | Robustness | Edge cases, paths, DPI, missing dependencies, invalid settings, restart loops, and a 30-minute soak pass. | Planned |
-| 11 | Benchmark and optimize | Timings, memory, and accuracy are separated; bottlenecks are optimized from evidence; backend decision is recorded. | Planned |
-| 12 | V1 delivery | Documentation, versioning, scenarios, test report, benchmark report, and final Windows workflow match the release. | Planned |
+| 8 | Initial-condition laboratory | Particle count, eight seeded scenarios, repeat/reroll controls, workload guidance, and exact-mode safeguards are usable. | **Complete** |
+| 9 | Observe the physics | Colour modes, ejection state, statistics, centre of mass, and canonical views make the evolution understandable. | Planned |
+| 10 | Record and replay | Bounded history, timeline, seeking, frame stepping, and accelerated playback coexist with live simulation. | Planned |
+| 11 | Follow individual particles | Picking, highlight, recent trajectory, trails, and a follow camera remain usable at interactive counts. | Planned |
+| 12 | Optional particle mergers | Spatially accelerated finite-radius detection and momentum-conserving fusion are physically explicit and disableable. | Planned |
+| 13 | Finish and publish | Presets, capture/export, hidden UI, persistence, robustness, benchmarks, documentation, and release workflow are polished. | Planned |
 
 ## Step 1 output
 
@@ -183,6 +184,31 @@ with finite positions and stopped the active worker cleanly. These timings chara
 not the Windows reference PC. See `docs/PHYSICS_RENDER_COUPLING.md` for the
 contracts and `docs/STEP7_VALIDATION.md` for the short hardware check.
 
+## Step 8 output
+
+Step 8 replaces the single implicit initial state with an explicit reproducible
+experiment contract:
+
+- `ExperimentConfig` atomically identifies scenario, Barnes-Hut particle count,
+  and visible random seed;
+- the catalogue supplies spiral, uniform disk, ring, sphere, frontal encounter,
+  oblique encounter, bound random cloud, and total-chaos initial conditions;
+- every generator is deterministic, finite, mass-centred, and corrected to zero
+  bulk momentum before it reaches a solver;
+- `Recommencer à l’identique` retains the active configuration while `Nouveau
+  tirage` changes and displays only the seed;
+- Barnes-Hut accepts 100 to 50,000 particles and the UI gives an indicative
+  relative `N log N` workload before launch;
+- the exact comparison still enforces a 1,000-body ceiling internally and
+  returning to Barnes-Hut restores the requested count, scenario, seed, pause,
+  and speed;
+- the GPU buffer can resize in place, and generation changes rebuild visual
+  attributes even when the particle count stays constant.
+
+The automated suite validates every scenario both statically and through real
+Barnes-Hut/leapfrog advances. See `docs/INITIAL_SCENARIOS.md` for the physical
+meaning and caveats, and `docs/STEP8_VALIDATION.md` for the Windows check.
+
 ## Validation cadence
 
 The owner receives a testable build at the points where local hardware or user
@@ -193,8 +219,12 @@ feel matters:
 - after steps 4-5: reference physics and rotating galaxy;
 - after step 6: 10,000-particle performance and approximation quality;
 - after step 7: physical motion, worker responsiveness, and optional exact comparison;
-- after steps 8-9: complete controls and appearance;
-- after steps 10-12: release candidate.
+- after step 8: scenario selection, reproducibility, and particle-count changes;
+- after step 9: physical observability and appearance;
+- after step 10: timeline correctness, memory limits, and accelerated replay;
+- after step 11: particle selection, trails, and follow-camera feel;
+- after step 12: merger conservation and collision-heavy scenarios;
+- after step 13: release candidate.
 
 Automated checks are run before every handoff. Manual checks are short and
 specific; they do not replace tests that can be automated.
@@ -216,7 +246,7 @@ relevant particle counts.
 This gate passed at theta 0.7: both seeded accuracy sets are inside budget and
 the same-host 10,000-particle benchmark is 26.92x faster than the exact solver.
 
-### Backend gate (step 11)
+### Backend gate (before final delivery)
 
 Keep Python + Numba when V1 budgets are met. Move only the measured hot boundary
 to GPU/C++/Rust if it is not. A full rewrite is not the default outcome.

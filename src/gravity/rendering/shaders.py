@@ -4,7 +4,6 @@ VERTEX_SHADER = """
 #version 330 core
 
 uniform mat4 u_mvp;
-uniform float u_time;
 uniform float u_point_scale;
 
 in vec3 in_position;
@@ -15,16 +14,7 @@ out float particle_strength;
 
 void main() {
     float radius = length(in_position.xz);
-    float angular_speed = 0.045 + 0.18 / (1.0 + radius * 0.35);
-    float angle = u_time * angular_speed;
-    float c = cos(angle);
-    float s = sin(angle);
-
-    vec3 animated_position = in_position;
-    animated_position.x = c * in_position.x - s * in_position.z;
-    animated_position.z = s * in_position.x + c * in_position.z;
-
-    vec4 clip_position = u_mvp * vec4(animated_position, 1.0);
+    vec4 clip_position = u_mvp * vec4(in_position, 1.0);
     gl_Position = clip_position;
 
     float perspective_scale = clamp(19.0 / max(5.0, clip_position.w), 0.62, 2.3);

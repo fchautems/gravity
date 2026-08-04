@@ -19,8 +19,10 @@ from gravity.physics.invariants import (
     total_momentum,
 )
 from gravity.physics.potentials import PlummerPotential
+from gravity.physics.solver import AccelerationSolver
 
 __all__ = [
+    "AccelerationSolver",
     "BarnesHutSolver",
     "BarnesHutStats",
     "CompositeGravitySolver",

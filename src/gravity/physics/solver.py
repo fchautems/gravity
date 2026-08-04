@@ -10,7 +10,9 @@ from gravity.core.state import FloatArray
 class AccelerationSolver(Protocol):
     """Compute accelerations for one complete particle state."""
 
-    name: str
+    @property
+    def name(self) -> str:
+        """Stable backend identifier."""
 
     def compute(
         self,

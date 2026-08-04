@@ -3,12 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 import moderngl
+import numpy as np
 import pytest
 
 from gravity.rendering.camera import OrbitCamera
-from gravity.rendering.particles import ParticleRenderer
+from gravity.rendering.particles import ParticleRenderer, physical_particle_field
 from gravity.rendering.shaders import FRAGMENT_SHADER, VERTEX_SHADER
-from gravity.scenarios.synthetic import generate_synthetic_galaxy
+
+
+def _field(count: int) -> object:
+    return physical_particle_field(np.zeros((count, 3), dtype=np.float32))
 
 
 class FakeUniform:
@@ -23,6 +27,10 @@ class FakeUniform:
 class FakeResource:
     def __init__(self) -> None:
         self.released = False
+        self.writes: list[bytes] = []
+
+    def write(self, value: bytes) -> None:
+        self.writes.append(value)
 
     def release(self) -> None:
         self.released = True
@@ -33,7 +41,6 @@ class FakeProgram(FakeResource):
         super().__init__()
         self.uniforms = {
             "u_mvp": FakeUniform(),
-            "u_time": FakeUniform(),
             "u_point_scale": FakeUniform(),
         }
 
@@ -97,8 +104,8 @@ class FakeContext:
 
 def test_renderer_uploads_once_and_draws_all_particles_once_per_frame() -> None:
     context = FakeContext()
-    field = generate_synthetic_galaxy(64, seed=7)
-    renderer = ParticleRenderer(context, field)
+    field = _field(64)
+    renderer = ParticleRenderer(context, field)  # type: ignore[arg-type]
     assert context.buffer_bytes == field.vertices.tobytes()
     assert context.vertex_layout is not None
     assert len(context.vertex_layout) == 1
@@ -107,25 +114,22 @@ def test_renderer_uploads_once_and_draws_all_particles_once_per_frame() -> None:
         OrbitCamera(),
         framebuffer_width=1280,
         framebuffer_height=720,
-        animation_time=2.5,
         point_scale=1.2,
     )
     assert context.vertex_array_resource.calls == [(moderngl.POINTS, 64)]
     assert renderer.draw_calls == 1
     assert context.viewport == (0, 0, 1280, 720)
     assert len(context.program_resource["u_mvp"].written or b"") == 64
-    assert context.program_resource["u_time"].value == 2.5
     assert context.program_resource["u_point_scale"].value == pytest.approx(1.2)
 
 
 def test_zero_size_framebuffer_skips_draw_and_release_is_idempotent() -> None:
     context = FakeContext()
-    renderer = ParticleRenderer(context, generate_synthetic_galaxy(8))
+    renderer = ParticleRenderer(context, _field(8))  # type: ignore[arg-type]
     renderer.render(
         OrbitCamera(),
         framebuffer_width=0,
         framebuffer_height=720,
-        animation_time=0.0,
         point_scale=1.0,
     )
     assert context.vertex_array_resource.calls == []
@@ -139,17 +143,37 @@ def test_zero_size_framebuffer_skips_draw_and_release_is_idempotent() -> None:
             OrbitCamera(),
             framebuffer_width=10,
             framebuffer_height=10,
-            animation_time=0.0,
             point_scale=1.0,
         )
 
 
+def test_physics_snapshots_update_or_resize_the_single_gpu_buffer() -> None:
+    context = FakeContext()
+    initial = np.zeros((8, 3), dtype=np.float32)
+    renderer = ParticleRenderer(context, physical_particle_field(initial))
+
+    moved = np.full((8, 3), 0.25, dtype=np.float32)
+    renderer.update_positions(moved)
+    assert context.buffer_resource.writes
+    assert renderer.particle_count == 8
+    assert renderer.upload_count == 2
+
+    resized = np.zeros((4, 3), dtype=np.float32)
+    old_buffer = context.buffer_resource
+    renderer.update_positions(resized)
+    assert old_buffer.released
+    assert renderer.particle_count == 4
+    assert renderer.upload_count == 3
+    renderer.release()
+
+
 def test_graphics_info_and_shader_contract() -> None:
-    renderer = ParticleRenderer(FakeContext(), generate_synthetic_galaxy(2))
+    renderer = ParticleRenderer(FakeContext(), _field(2))  # type: ignore[arg-type]
     info = renderer.graphics_info()
     assert info.version_code == 330
     assert info.renderer == "Test GPU"
     assert "#version 330 core" in VERTEX_SHADER
+    assert "u_time" not in VERTEX_SHADER
     assert "gl_PointSize" in VERTEX_SHADER
     assert "gl_PointCoord" in FRAGMENT_SHADER
     renderer.release()

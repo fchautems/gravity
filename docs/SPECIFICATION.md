@@ -88,6 +88,8 @@ part of V1 physics.
 - The 3D viewport is the dominant surface. A docked control panel may be hidden.
 - Basic controls must be understandable without knowing what an octree,
   softening length, or theta means.
+- Barnes-Hut is the automatic interactive default. The exact solver is exposed
+  only as an advanced comparison mode and must enforce a safe particle ceiling.
 - Every advanced numeric control has a safe range, a default, a short tooltip,
   and either immediate or `Régénérer` semantics.
 - UI input takes priority over camera input while the pointer is over a widget.

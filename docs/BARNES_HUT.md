@@ -5,8 +5,9 @@ a measured three-dimensional Barnes-Hut approximation. The exact step-4 solver
 remains the numerical oracle and is still used for small systems, regression
 tests, and every accuracy report.
 
-This step does not yet connect physics to the OpenGL particles. The visual
-galaxy remains synthetic until step 7 adds the worker and snapshot exchange.
+Step 7 now connects this solver to the OpenGL particles through the fixed-step
+worker and immutable snapshot exchange. Barnes-Hut is the interactive default;
+the exact engine remains an explicitly selected small-system reference.
 
 ## Numerical model
 
@@ -87,7 +88,7 @@ validation and instrumentation; it is therefore directly comparable with the
 timed exact `compute` call. Tree and force columns remain the internal split.
 
 The installer warms both the sequential and parallel kernels so first use in
-the future interactive worker does not look like an application freeze.
+the interactive worker does not look like an application freeze.
 
 ## Accuracy gate
 
@@ -135,9 +136,10 @@ not a claimed Windows hardware constant.
 The tree arrays occupy about 0.50 MiB at 10,000 particles and 2.56 MiB at
 50,000. The decisive gate is the same-host 10,000-particle comparison: the
 approximation is well inside its error budget and more than ten times faster
-than the exact oracle. Absolute Windows throughput can be measured again once
-step 7 runs physics beside the UI, where thread scheduling and responsiveness
-matter in their real configuration.
+than the exact oracle. Step 7's same-container coupled smoke measured 13.35 ms
+for its last 10,000-body step while the renderer consumed snapshots
+independently. Absolute Windows throughput remains part of the target-PC
+checklist because thread scheduling and CPU performance differ by machine.
 
 ## Public components
 

@@ -77,16 +77,21 @@ Gravity V1 uses one process and two principal threads:
 - is the only writer of live physics state;
 - consumes commands at explicit safe points;
 - advances a fixed-step simulation with Numba kernels that release the GIL;
-- publishes complete snapshots through a bounded double buffer;
+- publishes complete snapshots through a queue with capacity one;
 - never touches OpenGL or Dear ImGui.
 
-The worker is introduced when physics and rendering are coupled in roadmap step
-7. Earlier steps use the same component contracts synchronously, which keeps
-tests simple without changing ownership later.
+This model is implemented at step 7 by `PhysicsWorker`, `RenderSnapshot`, and
+`SimulationStatus`. The snapshot queue holds at most one presentation copy: a
+newer state atomically replaces an unconsumed older copy.
 
 Commands are values such as `Pause`, `Resume`, `SingleStep`, `Reset`,
 `Regenerate(config)`, and `SetTimeScale`. New scenario configuration replaces a
 whole validated object rather than mutating shared fields piecemeal.
+
+Barnes-Hut is the only automatic startup mode and uses 10,000 particles. The
+exact solver is an explicit advanced comparison command and has a hard 1,000
+particle ceiling. Switching backend creates a new seeded runtime rather than
+mutating a live solver behind the integrator.
 
 If the renderer is faster than physics it reuses the newest snapshot. If physics
 is faster, old unpublished snapshots may be dropped; physics state itself is
@@ -243,6 +248,8 @@ The compatibility target is an OpenGL 3.3 core context.
 - the fragment shader produces circular, soft-edged point sprites;
 - additive glow and trails use optional passes with explicit timing;
 - the renderer uploads only when a new snapshot is available;
+- the vertex shader consumes physical positions directly and applies no
+  independent animation or rotation;
 - resize and DPI changes update viewport and projection without rebuilding
   physics state.
 
@@ -266,6 +273,11 @@ The initial layout is:
 - compact performance overlay;
 - basic controls visible, advanced physics folded;
 - modal progress/error surfaces only when necessary.
+
+At step 7 the advanced section is closed by default. It identifies Barnes-Hut as
+the normal backend and requires a deliberate button press to regenerate a
+1,000-particle exact comparison. Returning to Barnes-Hut restores 10,000
+particles.
 
 UI and camera event routing honours ImGui input-capture flags. Dragging a slider
 must never orbit the camera.
@@ -301,8 +313,8 @@ No runtime network access or telemetry is required.
 - Logs rotate by size and count.
 - Expected validation failures become French UI messages.
 - Unexpected failures show a short message plus the exact local log path.
-- Worker exceptions are marshalled to the main thread and trigger a controlled
-  pause rather than disappearing silently.
+- Worker exceptions are marshalled to the main thread and reach the top-level
+  user-feedback boundary rather than disappearing silently.
 - Per-particle, per-pair, and per-node logging is forbidden in normal runs.
 
 ## 14. Verification architecture

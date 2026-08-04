@@ -10,14 +10,19 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 6 complete: the flat Barnes-Hut octree meets its exact-force error budget
-and is 26.9x faster than direct summation at 10,000 particles in the committed
-warmed benchmark.**
+**Step 7 complete: the 10,000 visible particles now evolve under the real
+Barnes-Hut gravity engine through a non-blocking fixed-step worker.**
 
 `LANCER_GRAVITY.bat` now opens a styled, resizable 3D window with a smooth orbit
-camera, a French control panel, live frame metrics, and 10,000 synthetic
-particles submitted in one GPU draw. The visual rotation remains deliberately
-artificial until step 7 connects physics snapshots to the renderer.
+camera, a French control panel, live frame and physics metrics, and 10,000
+physical particles submitted in one GPU draw. The worker publishes only complete
+immutable snapshots; rendering reuses the newest one and never waits for a
+force calculation.
+
+Barnes-Hut is the automatic and recommended backend. The exact `O(N²)` engine is
+available only inside the collapsed advanced-physics section as an intentional
+comparison mode. Activating it regenerates the scenario with a hard limit of
+1,000 particles; returning to Barnes-Hut restores the 10,000-particle default.
 
 The exact engine stores state in validated `float64` arrays, evaluates every
 unordered pair once in compiled code, and advances it with kick-drift-kick
@@ -47,16 +52,18 @@ project and logs live in `%LOCALAPPDATA%\Gravity\logs`. See the
 [Windows installation guide](docs/INSTALLATION.md) for the exact first test and
 troubleshooting path.
 
-## First graphics test
+## Interactive test
 
 - drag with the left mouse button to orbit;
 - drag with the right or middle button to pan;
 - use the wheel to zoom;
-- use `Pause`, `Recommencer`, and `Recentrer la vue` in the right panel;
+- use `Pause`, `Avancer d’un pas`, `Recommencer`, and `Recentrer la vue`;
 - resize and maximize the window while watching the FPS overlay.
+- optionally open `Physique avancée` to test the exact 1,000-particle reference,
+  then return to Barnes-Hut.
 
-The short [step-3 validation checklist](docs/GRAPHICS_VALIDATION.md) records the
-expected result and the useful information to report if a graphics driver fails.
+The short [step-7 validation checklist](docs/STEP7_VALIDATION.md) records the
+expected physical result and the useful information to report.
 
 ## V1 commitments
 
@@ -109,11 +116,11 @@ src/gravity/
 ```
 
 The packages now include the startup boundary, local diagnostics, orbit camera,
-input routing, deterministic synthetic field, ModernGL renderer, Dear ImGui
-shell, validated particle state, exact force solver, leapfrog integrator,
-physical-invariant diagnostics, analytic halo, reproducible physical galaxy
-generator, flat octree, and parallel Barnes-Hut solver. Physics remains
-intentionally independent from graphics until the step-7 coupling gate.
+input routing, dynamic ModernGL renderer, Dear ImGui shell, validated particle
+state, exact force solver, leapfrog integrator, physical-invariant diagnostics,
+analytic halo, reproducible physical galaxy generator, flat octree, parallel
+Barnes-Hut solver, bounded snapshot exchange, command queue, and clean worker
+lifecycle.
 
 ## Historical version
 

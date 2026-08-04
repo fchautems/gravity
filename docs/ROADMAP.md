@@ -14,7 +14,7 @@ earlier one.
 | 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | **Complete** |
 | 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | **Complete** |
 | 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | **Complete** |
-| 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | Planned |
+| 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | **Complete** |
 | 8 | Complete user controls | Basic/advanced controls, validation, presets, settings persistence, and French help text are usable. | Planned |
 | 9 | Visual quality | Colour, point sprites, glow/trails, fullscreen, and screenshots are polished and individually measurable. | Planned |
 | 10 | Robustness | Edge cases, paths, DPI, missing dependencies, invalid settings, restart loops, and a 30-minute soak pass. | Planned |
@@ -127,7 +127,8 @@ the complete measured evidence.
 
 ## Step 6 output
 
-Step 6 adds the measured approximation used by the future interactive worker:
+Step 6 adds the measured approximation used by the interactive worker from
+step 7 onward:
 
 - `FlatOctree` stores cubic bounds, child indices, nested particle ranges,
   depths, masses, and centres of mass in immutable contiguous arrays;
@@ -151,6 +152,37 @@ coverage. The 512-particle galaxy validation measures 1.142% median and 3.125%
 26.92x speedup, with 1.291% / 3.294% error. See `docs/BARNES_HUT.md` and the
 machine-readable benchmark baseline for the complete method and caveats.
 
+## Step 7 output
+
+Step 7 replaces the visual-only shader animation with the complete physical
+pipeline:
+
+- `PhysicsWorker` is the only owner of mutable `float64` physics state and runs
+  fixed leapfrog steps outside the OpenGL/UI thread;
+- a typed command queue handles pause, resume, single step, deterministic reset,
+  time scale, solver switch, and shutdown at safe points;
+- a queue of capacity one publishes complete, read-only `float32` position
+  snapshots, dropping superseded presentation copies but never physics state;
+- the renderer uploads only a newly available snapshot, retains one interleaved
+  GPU buffer, and issues one particle draw without any shader-side rotation;
+- Barnes-Hut is always the startup backend with 10,000 particles;
+- the exact solver is deliberately hidden in the collapsed advanced section,
+  explicitly labelled as a comparison tool, and hard-limited to 1,000 particles;
+- reset and backend changes regenerate the same seeded scenario, while switching
+  back to Barnes-Hut restores the 10,000-particle default;
+- worker failures are relayed to the main application boundary and shutdown has
+  a bounded join instead of leaving an invisible background thread.
+
+The complete automated suite contains 198 tests with branch coverage above the
+80% delivery gate. A real warmed coupling smoke in the validation container
+started Barnes-Hut with 10,000 particles, advanced four finite steps, and
+reported 13.35 ms for the last force/integration step. The exact comparison mode
+switched to 1,000 particles, advanced one step in 8.81 ms, and restored the
+paused 10,000-particle Barnes-Hut state. A second short soak reached 100 steps
+with finite positions and stopped the active worker cleanly. These timings characterize that host,
+not the Windows reference PC. See `docs/PHYSICS_RENDER_COUPLING.md` for the
+contracts and `docs/STEP7_VALIDATION.md` for the short hardware check.
+
 ## Validation cadence
 
 The owner receives a testable build at the points where local hardware or user
@@ -160,7 +192,8 @@ feel matters:
 - after step 3: graphics, camera, DPI, and visual shell;
 - after steps 4-5: reference physics and rotating galaxy;
 - after step 6: 10,000-particle performance and approximation quality;
-- after steps 7-9: complete interaction and appearance;
+- after step 7: physical motion, worker responsiveness, and optional exact comparison;
+- after steps 8-9: complete controls and appearance;
 - after steps 10-12: release candidate.
 
 Automated checks are run before every handoff. Manual checks are short and

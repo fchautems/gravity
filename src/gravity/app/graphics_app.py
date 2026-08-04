@@ -1,4 +1,4 @@
-"""Composition root for the step-3 interactive graphics shell."""
+"""Composition root for the coupled interactive simulation."""
 
 from __future__ import annotations
 
@@ -10,14 +10,14 @@ import moderngl
 from imgui_bundle import imgui
 from imgui_bundle.python_backends.glfw_backend import GlfwRenderer
 
-from gravity.app.animation import AnimationClock
+from gravity.app.physics_worker import PhysicsWorker
+from gravity.core.simulation import SimulationStatus
 from gravity.diagnostics.frame_stats import FrameStats
 from gravity.rendering.camera import OrbitCamera
 from gravity.rendering.glfw_input import GlfwInputRouter
-from gravity.rendering.particles import ParticleRenderer
+from gravity.rendering.particles import ParticleRenderer, physical_particle_field
 from gravity.rendering.window import GlfwWindow, GraphicsInitializationError
-from gravity.scenarios.synthetic import generate_synthetic_galaxy
-from gravity.ui.panel import UiState, draw_control_panel, draw_performance_overlay
+from gravity.ui.panel import UiActions, UiState, draw_control_panel, draw_performance_overlay
 from gravity.ui.theme import configure_theme
 
 
@@ -28,6 +28,28 @@ def _release_safely(logger: logging.Logger, label: str, release: Callable[[], No
         logger.exception("Failed to release %s", label)
 
 
+def _dispatch_simulation_actions(
+    worker: PhysicsWorker,
+    simulation: SimulationStatus,
+    actions: UiActions,
+) -> None:
+    """Translate UI values into thread-safe worker commands."""
+
+    if actions.toggle_pause:
+        if simulation.paused:
+            worker.resume()
+        else:
+            worker.pause()
+    if actions.reset_simulation:
+        worker.reset()
+    if actions.single_step:
+        worker.single_step()
+    if actions.time_scale is not None:
+        worker.set_time_scale(actions.time_scale)
+    if actions.solver_mode is not None:
+        worker.set_solver(actions.solver_mode)
+
+
 def run_graphics_app(logger: logging.Logger) -> None:
     """Open the window and run until the user closes it."""
 
@@ -35,6 +57,7 @@ def run_graphics_app(logger: logging.Logger) -> None:
     context = None
     imgui_renderer = None
     particle_renderer = None
+    physics_worker = PhysicsWorker(logger)
     imgui_context_created = False
 
     try:
@@ -59,19 +82,22 @@ def run_graphics_app(logger: logging.Logger) -> None:
         input_router = GlfwInputRouter(window.handle, imgui_renderer, camera)
         input_router.attach()
 
-        field = generate_synthetic_galaxy()
-        particle_renderer = ParticleRenderer(context, field)
+        physics_worker.start()
+        current_snapshot = physics_worker.wait_for_snapshot()
+        particle_renderer = ParticleRenderer(
+            context,
+            physical_particle_field(current_snapshot.positions),
+        )
         graphics_info = particle_renderer.graphics_info()
         logger.info(
-            "Graphics ready: OpenGL %s, renderer=%s, vendor=%s, particles=%s",
+            "Coupled simulation ready: OpenGL %s, renderer=%s, solver=%s, particles=%s",
             graphics_info.version,
             graphics_info.renderer,
-            graphics_info.vendor,
-            field.count,
+            current_snapshot.status.solver_mode.value,
+            current_snapshot.status.particle_count,
         )
 
-        ui_state = UiState()
-        clock = AnimationClock()
+        ui_state = UiState(time_scale=current_snapshot.status.time_scale)
         stats = FrameStats()
         previous_frame_start = perf_counter()
 
@@ -79,6 +105,12 @@ def run_graphics_app(logger: logging.Logger) -> None:
             frame_start = perf_counter()
             frame_seconds = frame_start - previous_frame_start
             previous_frame_start = frame_start
+
+            physics_worker.raise_if_failed()
+            newest_snapshot = physics_worker.latest_snapshot()
+            if newest_snapshot is not None:
+                particle_renderer.update_positions(newest_snapshot.positions)
+                current_snapshot = newest_snapshot
 
             window.poll_events()
             imgui_renderer.process_inputs()  # type: ignore[no-untyped-call]
@@ -90,13 +122,11 @@ def run_graphics_app(logger: logging.Logger) -> None:
                 ui_captures_mouse=bool(imgui.get_io().want_capture_mouse),
                 viewport_height=window_size[1],
             )
-            clock.advance(frame_seconds)
 
             actions = draw_control_panel(
                 ui_state,
-                clock,
                 stats,
-                particle_count=field.count,
+                simulation=current_snapshot.status,
                 graphics=graphics_info,
                 window_size=window_size,
                 dpi_scale=dpi_scale,
@@ -104,25 +134,24 @@ def run_graphics_app(logger: logging.Logger) -> None:
             draw_performance_overlay(stats)
             if actions.reset_camera:
                 camera.reset()
-            if actions.restart_animation:
-                clock.restart()
+            _dispatch_simulation_actions(physics_worker, current_snapshot.status, actions)
 
             draw_start = perf_counter()
             particle_renderer.render(
                 camera,
                 framebuffer_width=framebuffer_width,
                 framebuffer_height=framebuffer_height,
-                animation_time=clock.elapsed,
                 point_scale=ui_state.point_scale,
             )
             imgui.render()
             imgui_renderer.render(imgui.get_draw_data())
             window.swap_buffers()
             draw_seconds = perf_counter() - draw_start
-            stats.record(perf_counter() - frame_start, draw_seconds)
+            stats.record(frame_seconds, draw_seconds)
 
         logger.info("Graphics window closed normally")
     finally:
+        _release_safely(logger, "physics worker", physics_worker.shutdown)
         if particle_renderer is not None:
             _release_safely(logger, "particle renderer", particle_renderer.release)
         if imgui_renderer is not None:

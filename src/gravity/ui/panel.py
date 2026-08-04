@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from imgui_bundle import imgui
 
-from gravity.app.animation import AnimationClock
+from gravity.core.simulation import SimulationStatus, SolverMode
 from gravity.diagnostics.frame_stats import FrameStats
 from gravity.rendering.particles import GraphicsInfo
 from gravity.ui import strings
@@ -16,12 +16,17 @@ from gravity.ui import strings
 class UiState:
     panel_visible: bool = True
     point_scale: float = 1.0
+    time_scale: float = 1.0
 
 
 @dataclass(frozen=True, slots=True)
 class UiActions:
     reset_camera: bool = False
-    restart_animation: bool = False
+    toggle_pause: bool = False
+    reset_simulation: bool = False
+    single_step: bool = False
+    time_scale: float | None = None
+    solver_mode: SolverMode | None = None
 
 
 def _panel_flags() -> imgui.WindowFlags:
@@ -35,10 +40,9 @@ def _panel_flags() -> imgui.WindowFlags:
 
 def draw_control_panel(
     state: UiState,
-    clock: AnimationClock,
     stats: FrameStats,
     *,
-    particle_count: int,
+    simulation: SimulationStatus,
     graphics: GraphicsInfo,
     window_size: tuple[int, int],
     dpi_scale: float,
@@ -56,19 +60,28 @@ def draw_control_panel(
 
     expanded, _ = imgui.begin("Gravity##control-panel", None, _panel_flags())
     reset_camera = False
-    restart_animation = False
+    toggle_pause = False
+    reset_simulation = False
+    single_step = False
+    selected_time_scale = None
+    selected_solver = None
     if expanded:
         imgui.text_colored((0.30, 0.72, 1.00, 1.00), strings.APP_NAME)
         imgui.text(strings.SCENE_NAME)
         imgui.text_disabled(strings.VISUAL_MILESTONE)
         imgui.spacing()
-        imgui.text_wrapped(strings.SYNTHETIC_NOTICE)
+        imgui.text_wrapped(strings.PHYSICAL_NOTICE)
 
         imgui.separator_text(strings.CONTROLS)
-        if imgui.button(strings.RESUME if clock.paused else strings.PAUSE, (-1.0, 0.0)):
-            clock.toggle_pause()
+        if imgui.button(
+            strings.RESUME if simulation.paused else strings.PAUSE,
+            (-1.0, 0.0),
+        ):
+            toggle_pause = True
         if imgui.button(strings.RESTART, (-1.0, 0.0)):
-            restart_animation = True
+            reset_simulation = True
+        if simulation.paused and imgui.button(strings.SINGLE_STEP, (-1.0, 0.0)):
+            single_step = True
         if imgui.button(strings.RESET_CAMERA, (-1.0, 0.0)):
             reset_camera = True
 
@@ -79,20 +92,39 @@ def draw_control_panel(
             2.4,
             "%.2f×",
         )
-        _, clock.speed = imgui.slider_float(
+        speed_changed, state.time_scale = imgui.slider_float(
             strings.ANIMATION_SPEED,
-            clock.speed,
-            0.0,
+            state.time_scale,
+            0.1,
             2.5,
             "%.2f×",
         )
+        if speed_changed:
+            selected_time_scale = state.time_scale
 
         imgui.separator_text(strings.PERFORMANCE)
         imgui.text(f"{stats.fps:5.1f} FPS")
         imgui.text_disabled(f"Image médiane : {stats.frame_ms:5.2f} ms")
         imgui.text_disabled(f"Rendu médian : {stats.draw_ms:5.2f} ms")
-        imgui.text(f"{particle_count:,} particules".replace(",", "’"))
-        imgui.text_disabled("1 tampon GPU · 1 appel de dessin")
+        imgui.text(f"{simulation.particle_count:,} particules".replace(",", "’"))
+        imgui.text_disabled(f"Physique : {simulation.physics_ms:5.2f} ms / pas")
+        simulated_time = f"{simulation.simulation_time:.2f}"
+        step_count = f"{simulation.step_count:,}".replace(",", "’")
+        imgui.text_disabled(f"Temps simulé : {simulated_time} · pas {step_count}")
+        imgui.text_disabled("1 instantané · 1 tampon GPU · 1 appel de dessin")
+
+        if imgui.collapsing_header(strings.ADVANCED_PHYSICS):
+            imgui.text(f"Moteur : {simulation.solver_mode.french_name}")
+            if simulation.solver_mode is SolverMode.BARNES_HUT:
+                imgui.text_disabled(strings.BARNES_HUT_DEFAULT)
+                imgui.text_wrapped(strings.EXACT_WARNING)
+                if imgui.button(strings.EXACT_TEST, (-1.0, 0.0)):
+                    selected_solver = SolverMode.EXACT
+            else:
+                imgui.text_colored((1.0, 0.67, 0.28, 1.0), "MODE DE COMPARAISON")
+                imgui.text_wrapped(strings.EXACT_WARNING)
+                if imgui.button(strings.BACK_TO_BARNES_HUT, (-1.0, 0.0)):
+                    selected_solver = SolverMode.BARNES_HUT
 
         if imgui.collapsing_header(strings.GRAPHICS):
             imgui.text_wrapped(graphics.renderer)
@@ -105,7 +137,14 @@ def draw_control_panel(
         if imgui.button(strings.HIDE_SETTINGS, (-1.0, 0.0)):
             state.panel_visible = False
     imgui.end()
-    return UiActions(reset_camera=reset_camera, restart_animation=restart_animation)
+    return UiActions(
+        reset_camera=reset_camera,
+        toggle_pause=toggle_pause,
+        reset_simulation=reset_simulation,
+        single_step=single_step,
+        time_scale=selected_time_scale,
+        solver_mode=selected_solver,
+    )
 
 
 def _draw_settings_toggle(

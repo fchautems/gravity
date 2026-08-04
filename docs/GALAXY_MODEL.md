@@ -1,9 +1,9 @@
 # V1 galaxy initial conditions — step 5
 
 Step 5 creates the reproducible physical state that the exact and Barnes-Hut
-solvers consume. It deliberately remains independent from the
-step-3 renderer: `LANCER_GRAVITY.bat` still displays the synthetic visual field
-until the physics worker and snapshot exchange are connected in step 7.
+solvers consume. Step 7 now sends this state through the physics worker and
+snapshot exchange to `LANCER_GRAVITY.bat`; the visible galaxy is no longer the
+step-3 synthetic field.
 
 The goal is a coherent rotating initial condition, not a claim that the V1 is
 a scientific Milky Way formation model.
@@ -145,4 +145,4 @@ This demonstrates coherent initial rotation without prompt collapse; long-run
 Step 6 implements and compares Barnes-Hut against the exact self-gravity solver.
 The analytic halo is added identically after either self-gravity backend, so it
 does not contaminate that accuracy comparison. See `BARNES_HUT.md` for the
-measured gate.
+measured gate and `PHYSICS_RENDER_COUPLING.md` for its interactive use.

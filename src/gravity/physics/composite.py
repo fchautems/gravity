@@ -14,7 +14,9 @@ from gravity.physics.solver import AccelerationSolver
 class AdditiveAccelerationField(Protocol):
     """Analytic field that can add acceleration to a complete output array."""
 
-    name: str
+    @property
+    def name(self) -> str:
+        """Stable analytic-field identifier."""
 
     def add_acceleration(self, positions: FloatArray, output_buffer: FloatArray) -> None:
         """Add acceleration for all positions to ``output_buffer`` in place."""

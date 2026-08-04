@@ -1,9 +1,8 @@
-# Installation et jalon Barnes-Hut 6 de Gravity sous Windows
+# Installation et jalon physique 7 de Gravity sous Windows
 
-Ce guide couvre le jalon 6. Il installe le calcul compile et la pile graphique,
-valide le moteur exact, le generateur physique de galaxie et Barnes-Hut, puis
-ouvre le premier nuage galactique 3D. Le moteur n'est pas encore relie au rendu :
-l'image reste donc celle du jalon 3 jusqu'a l'etape 7.
+Ce guide couvre le jalon 7. Il installe le calcul compile et la pile graphique,
+valide le moteur exact, le generateur physique, Barnes-Hut et le worker, puis
+ouvre la galaxie dont les positions visibles proviennent du calcul reel.
 
 ## Prerequis
 
@@ -41,14 +40,15 @@ Double-cliquez sur `TESTER_GRAVITY.bat`. Il execute successivement :
 - les tests Pytest et leur couverture;
 - la verification de coherence des paquets installes.
 
-Les tests sans materiel verifient aussi la camera, les gestes de souris, la
-generation des 10 000 points, le contrat d'un seul appel GPU, les shaders, les
+Les tests sans materiel verifient aussi la camera, les gestes de souris, les
+instantanes physiques, le contrat d'un seul appel GPU, les shaders, les
 statistiques d'image et l'ordre de fermeture des ressources. Ils valident en
 plus les forces exactes, les invariants et la stabilite d'une orbite binaire sur
 100 periodes. Les controles couvrent aussi la reproductibilite et les
 distributions de la galaxie, le halo analytique, la coherence des vitesses, la
 structure de l'octree, les particules confondues, la precision de Barnes-Hut face
-au calcul exact et l'egalite des parcours sequentiel et parallele. L'installation
+au calcul exact, l'egalite des parcours sequentiel et parallele, les commandes du
+worker, le mode Barnes-Hut par defaut et la limite du mode exact. L'installation
 chauffe les deux noyaux Barnes-Hut afin d'eviter leur compilation au premier
 lancement physique.
 
@@ -97,5 +97,5 @@ la creation de la fenetre a reussi.
   de Windows;
 - essayez de reduire `Taille des etoiles` pour distinguer un probleme de rendu
   d'un simple effet trop lumineux;
-- consultez la [checklist graphique](GRAPHICS_VALIDATION.md) et transmettez le
+- consultez la [checklist du jalon 7](STEP7_VALIDATION.md) et transmettez le
   journal si le probleme persiste.

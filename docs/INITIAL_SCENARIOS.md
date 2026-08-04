@@ -13,11 +13,11 @@ An experiment is identified by exactly three public values:
 - Barnes-Hut particle count;
 - random seed.
 
-`Lancer cette expérience` regenerates all positions, velocities, masses, IDs,
+`Appliquer et recommencer` regenerates all positions, velocities, masses, IDs,
 component labels, analytic fields, and integrator buffers at a worker safe
-point. `Recommencer à l’identique` uses the same three values and therefore
-recreates the same initial arrays. `Nouveau tirage` keeps the scenario and count
-but deliberately chooses and displays another seed.
+point. Applying the same three values recreates the same initial arrays.
+`Changer la graine` prepares a different seed without restarting; the change
+takes effect only after `Appliquer et recommencer`.
 
 The supported Barnes-Hut range is 100 to 50,000 particles. Both dual-galaxy
 scenarios require at least 200 so each side can reuse a valid 100-body galaxy.

@@ -195,8 +195,8 @@ experiment contract:
   oblique encounter, bound random cloud, and total-chaos initial conditions;
 - every generator is deterministic, finite, mass-centred, and corrected to zero
   bulk momentum before it reaches a solver;
-- `Recommencer à l’identique` retains the active configuration while `Nouveau
-  tirage` changes and displays only the seed;
+- `Appliquer et recommencer` uses the displayed configuration while `Changer
+  la graine` changes and displays only the seed;
 - Barnes-Hut accepts 100 to 50,000 particles and the UI gives an indicative
   relative `N log N` workload before launch;
 - the exact comparison still enforces a 1,000-body ceiling internally and

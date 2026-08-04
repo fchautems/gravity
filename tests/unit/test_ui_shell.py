@@ -7,6 +7,7 @@ from gravity.core.experiment import ExperimentConfig, ScenarioKind
 from gravity.core.simulation import SimulationStatus, SolverMode
 from gravity.diagnostics.frame_stats import FrameStats
 from gravity.rendering.particles import GraphicsInfo
+from gravity.ui import strings
 from gravity.ui.panel import UiState, draw_control_panel, draw_performance_overlay
 from gravity.ui.theme import configure_theme
 
@@ -109,3 +110,17 @@ def test_new_generation_synchronizes_the_editable_experiment_draft(
     assert state.draft_particle_count == 5_000
     assert state.draft_seed == 4321
     assert state.synced_generation == 7
+
+
+def test_visible_ui_copy_uses_supported_ascii_apostrophes() -> None:
+    visible_copy = (
+        strings.SINGLE_STEP,
+        strings.EXACT_TEST,
+        strings.EXACT_WARNING,
+    )
+    assert all("’" not in text for text in visible_copy)
+
+
+def test_seed_change_does_not_imply_an_immediate_restart() -> None:
+    assert strings.CHANGE_SEED == "Changer la graine"
+    assert strings.APPLY_EXPERIMENT == "Appliquer et recommencer"

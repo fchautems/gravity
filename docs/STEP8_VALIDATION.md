@@ -16,10 +16,11 @@ on `Galaxie spirale`, 10,000 particles, seed `20260803`, and Barnes-Hut.
 
 1. Pause the simulation immediately.
 2. Select `Anneau`, 5,000 particles, and seed `1234`.
-3. Click `Lancer cette expérience` and note the initial pattern.
-4. Advance one step, then click `Recommencer à l’identique`.
+3. Click `Appliquer et recommencer` and note the initial pattern.
+4. Advance one step, then click `Appliquer et recommencer` again.
 5. Confirm the original pattern returns.
-6. Click `Nouveau tirage` and confirm the displayed seed and pattern both change.
+6. Click `Changer la graine` and confirm only the displayed seed changes, then
+   click `Appliquer et recommencer` and confirm the pattern changes.
 
 ## Catalogue
 

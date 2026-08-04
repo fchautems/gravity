@@ -60,10 +60,10 @@ troubleshooting path.
 - drag with the left mouse button to orbit;
 - drag with the right or middle button to pan;
 - use the wheel to zoom;
-- use `Pause`, `Avancer d’un pas`, `Recommencer`, and `Recentrer la vue`;
+- use `Pause`/`Reprendre`, `Avancer d'un pas`, and `Recentrer la vue`;
 - choose a starting scenario, Barnes-Hut particle count, and visible random seed;
-- use `Recommencer à l’identique` or `Nouveau tirage` to distinguish repeat
-  from reroll;
+- use `Appliquer et recommencer` to restart with the displayed settings, or
+  `Changer la graine` to prepare a new random draw without restarting;
 - resize and maximize the window while watching the FPS overlay.
 - optionally open `Physique avancée` to test the exact 1,000-particle reference,
   then return to Barnes-Hut.

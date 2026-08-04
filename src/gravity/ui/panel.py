@@ -61,7 +61,7 @@ def _synchronize_experiment_draft(state: UiState, simulation: SimulationStatus) 
 
 
 def _format_particle_count(value: int) -> str:
-    return f"{value:,}".replace(",", "’")
+    return f"{value:,}".replace(",", "'")
 
 
 def _panel_flags() -> imgui.WindowFlags:
@@ -116,22 +116,24 @@ def draw_control_panel(
             (-1.0, 0.0),
         ):
             toggle_pause = True
-        if imgui.button(strings.RESTART, (-1.0, 0.0)):
-            reset_simulation = True
         if simulation.paused and imgui.button(strings.SINGLE_STEP, (-1.0, 0.0)):
             single_step = True
         if imgui.button(strings.RESET_CAMERA, (-1.0, 0.0)):
             reset_camera = True
 
+        imgui.text(strings.POINT_SIZE)
+        imgui.set_next_item_width(-1.0)
         _, state.point_scale = imgui.slider_float(
-            strings.POINT_SIZE,
+            "##point-size",
             state.point_scale,
             0.55,
             2.4,
             "%.2f×",
         )
+        imgui.text(strings.ANIMATION_SPEED)
+        imgui.set_next_item_width(-1.0)
         speed_changed, state.time_scale = imgui.slider_float(
-            strings.ANIMATION_SPEED,
+            "##simulation-speed",
             state.time_scale,
             0.1,
             2.5,
@@ -142,8 +144,10 @@ def draw_control_panel(
 
         imgui.separator_text(strings.EXPERIMENT)
         scenario_index = SCENARIO_CATALOG.index(state.draft_scenario)
+        imgui.text(strings.INITIAL_SCENARIO)
+        imgui.set_next_item_width(-1.0)
         scenario_changed, scenario_index = imgui.combo(
-            strings.INITIAL_SCENARIO,
+            "##initial-scenario",
             scenario_index,
             [scenario.french_name for scenario in SCENARIO_CATALOG],
         )
@@ -155,8 +159,10 @@ def draw_control_panel(
             )
         imgui.text_wrapped(state.draft_scenario.french_description)
 
+        imgui.text(strings.PARTICLE_COUNT)
+        imgui.set_next_item_width(-1.0)
         count_changed, draft_count = imgui.input_int(
-            strings.PARTICLE_COUNT,
+            "##particle-count",
             state.draft_particle_count,
             1_000,
             5_000,
@@ -166,8 +172,10 @@ def draw_control_panel(
                 MAX_PARTICLE_COUNT,
                 max(state.draft_scenario.minimum_particles, draft_count),
             )
+        imgui.text(strings.RANDOM_SEED)
+        imgui.set_next_item_width(-1.0)
         seed_changed, draft_seed = imgui.input_int(
-            strings.RANDOM_SEED,
+            "##random-seed",
             state.draft_seed,
             1,
             1_000,
@@ -181,14 +189,14 @@ def draw_control_panel(
             seed=state.draft_seed,
         )
         load = estimated_barnes_hut_load(candidate.particle_count)
-        imgui.text_disabled(f"Charge Barnes–Hut estimée : {load:.2f}× la valeur par défaut")
-        if imgui.button(strings.LAUNCH_EXPERIMENT, (-1.0, 0.0)):
-            selected_experiment = candidate
-        if imgui.button(strings.NEW_RANDOMIZATION, (-1.0, 0.0)):
+        imgui.text_disabled("Charge Barnes–Hut estimée :")
+        imgui.text_disabled(f"{load:.2f}× la valeur par défaut")
+        if imgui.button(strings.CHANGE_SEED, (-1.0, 0.0)):
             state.draft_seed = _fresh_seed(candidate.seed)
+        if imgui.button(strings.APPLY_EXPERIMENT, (-1.0, 0.0)):
             selected_experiment = ExperimentConfig(
-                scenario=candidate.scenario,
-                particle_count=candidate.particle_count,
+                scenario=state.draft_scenario,
+                particle_count=state.draft_particle_count,
                 seed=state.draft_seed,
             )
 
@@ -196,12 +204,12 @@ def draw_control_panel(
         imgui.text(f"{stats.fps:5.1f} FPS")
         imgui.text_disabled(f"Image médiane : {stats.frame_ms:5.2f} ms")
         imgui.text_disabled(f"Rendu médian : {stats.draw_ms:5.2f} ms")
-        imgui.text(f"{simulation.particle_count:,} particules".replace(",", "’"))
+        imgui.text(f"{simulation.particle_count:,} particules".replace(",", "'"))
         imgui.text_disabled(f"Physique : {simulation.physics_ms:5.2f} ms / pas")
         simulated_time = f"{simulation.simulation_time:.2f}"
-        step_count = f"{simulation.step_count:,}".replace(",", "’")
+        step_count = f"{simulation.step_count:,}".replace(",", "'")
         imgui.text_disabled(f"Temps simulé : {simulated_time} · pas {step_count}")
-        imgui.text_disabled("1 instantané · 1 tampon GPU · 1 appel de dessin")
+        imgui.text_wrapped("1 instantané · 1 tampon GPU · 1 appel de dessin")
 
         if imgui.collapsing_header(strings.ADVANCED_PHYSICS):
             imgui.text(f"Moteur : {simulation.solver_mode.french_name}")
@@ -209,7 +217,8 @@ def draw_control_panel(
                 configured_count = _format_particle_count(
                     simulation.experiment_config.particle_count
                 )
-                imgui.text_disabled(f"Mode normal · Barnes–Hut · {configured_count} particules")
+                imgui.text_disabled("Mode normal · Barnes–Hut")
+                imgui.text_disabled(f"{configured_count} particules")
                 imgui.text_wrapped(strings.EXACT_WARNING)
                 if imgui.button(strings.EXACT_TEST, (-1.0, 0.0)):
                     selected_solver = SolverMode.EXACT

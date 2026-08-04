@@ -15,5 +15,7 @@ GRAPHICS = "Carte graphique"
 HELP = "Aide et commandes"
 HIDE_SETTINGS = "Masquer les réglages"
 SHOW_SETTINGS = "Réglages"
-SYNTHETIC_NOTICE = "Ce nuage sert à valider le rendu. La gravitation réelle arrivera au jalon 4."
+SYNTHETIC_NOTICE = (
+    "Ce nuage valide encore le rendu. La galaxie physique sera reliée à l'image au jalon 7."
+)
 MOUSE_HELP = "Clic gauche : tourner · clic droit ou molette : déplacer · roue : zoomer"

@@ -12,8 +12,8 @@ earlier one.
 | 2 | Reproducible setup and double-click launchers | Clean Windows setup, launch, and test smoke path work without a typed command; failures produce useful output. | **Complete** |
 | 3 | Graphics shell | Styled window, UI panel, camera, and a single GPU draw render 10,000 synthetic points smoothly. | **Complete — Windows validation passed** |
 | 4 | Exact physics reference | Direct solver and leapfrog pass two-body, conservation, symmetry, and long-run tests. | **Complete** |
-| 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | Next |
-| 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | Planned |
+| 5 | Galaxy generator | A seeded disk/bulge/halo configuration rotates coherently and passes distribution tests. | **Complete** |
+| 6 | Barnes-Hut | Flat octree passes structure tests, meets error budgets against exact forces, and demonstrates measured speedup. | Next |
 | 7 | Physics/render coupling | Fixed-step worker, command queue, snapshots, pause/step/reset, and clean shutdown are reliable. | Planned |
 | 8 | Complete user controls | Basic/advanced controls, validation, presets, settings persistence, and French help text are usable. | Planned |
 | 9 | Visual quality | Colour, point sprites, glow/trails, fullscreen, and screenshots are polished and individually measurable. | Planned |
@@ -100,6 +100,30 @@ coverage. The documented circular binary has relative energy drift `2.67e-9`
 after 100 orbits and centre-of-mass drift `3.76e-13`, both well inside the V1
 budgets. See `docs/PHYSICS_REFERENCE.md` for the model and reproducible test
 parameters.
+
+## Step 5 output
+
+Step 5 adds deterministic, physically motivated galactic initial conditions:
+
+- `GalaxyConfig` validates the complete seed, structure, mass, dispersion,
+  softening, and fixed-step configuration;
+- the generator samples a truncated exponential disk, truncated spherical
+  Hernquist bulge, and optional live central mass into strict `float64` arrays;
+- `GalaxyMassModel` derives initial tangential speeds from a documented smooth
+  enclosed-mass curve and applies small seeded dispersions;
+- `PlummerPotential` models the non-particle halo as a separate compiled
+  analytic field, while `CompositeGravitySolver` composes it explicitly with
+  exact or future Barnes-Hut self-gravity;
+- mass-weighted position and bulk velocity are corrected before deterministic
+  shuffling, producing effectively zero centre-of-mass drift and momentum;
+- distribution, determinism, analytic-potential, rotation-coherence, and
+  240-particle exact dynamic tests validate the gate without graphics.
+
+At this gate the complete automated suite contains 147 tests with 88.84% branch
+coverage. In the short dynamic gate, the median disk radius remains at `0.996`
+of its initial value after 200 steps while its median angular travel reaches
+`0.513` radians. See `docs/GALAXY_MODEL.md` for formulas, defaults, caveats, and
+the complete measured evidence.
 
 ## Validation cadence
 

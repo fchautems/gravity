@@ -40,6 +40,15 @@ The documented 100-orbit circular binary produced relative energy drift
 `2.67e-9` and centre-of-mass drift `3.76e-13`; the full parameters and portable
 thresholds are recorded in `../PHYSICS_REFERENCE.md`.
 
+## Step-5 implementation evidence
+
+The default live disk, bulge, and central mass now receive initial velocities
+from a documented smooth enclosed-mass curve. The Plummer halo remains a
+separate analytic field and is composed only after self-gravity. The seeded
+240-particle exact gate retains a median radius ratio of `0.996` after 200 steps
+while advancing a median `0.513` radians. Model assumptions and the complete
+distribution evidence are recorded in `../GALAXY_MODEL.md`.
+
 ## Rejected alternatives
 
 - Explicit Euler: unacceptable energy behaviour for orbits.

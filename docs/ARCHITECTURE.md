@@ -216,6 +216,14 @@ Generation and dynamics are tested separately. A scenario test checks
 distribution statistics, finiteness, determinism, centre-of-mass correction, and
 initial radial-force/velocity consistency. Visual beauty alone is not a test.
 
+This boundary is implemented at step 5 by `GalaxyConfig`,
+`generate_spiral_galaxy`, `GalaxyMassModel`, and immutable component labels kept
+beside the mutable `ParticleState`. The analytic Plummer halo implements a
+separate additive field; `CompositeGravitySolver` combines it explicitly with a
+self-gravity backend without changing either model. The exact short-run gate
+and default-seed distribution measurements are documented in
+`GALAXY_MODEL.md`.
+
 ## 10. Rendering pipeline
 
 The compatibility target is an OpenGL 3.3 core context.

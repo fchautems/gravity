@@ -10,20 +10,23 @@ handled by compiled CPU code and the GPU.
 
 ## Status
 
-**Step 4 complete: the exact gravitational reference engine and fixed-step
-leapfrog integrator pass the numerical validation gate.**
+**Step 5 complete: the reproducible disk, bulge, central mass, and analytic halo
+produce coherent rotating initial conditions and pass the dynamic gate.**
 
 `LANCER_GRAVITY.bat` now opens a styled, resizable 3D window with a smooth orbit
 camera, a French control panel, live frame metrics, and 10,000 synthetic
 particles submitted in one GPU draw. The visual rotation remains deliberately
-artificial: step 4 validates physics independently, step 5 creates physical
-galactic initial conditions, and the later coupling step connects snapshots to
-the renderer.
+artificial until step 7 connects physics snapshots to the renderer.
 
 The exact engine stores state in validated `float64` arrays, evaluates every
 unordered pair once in compiled code, and advances it with kick-drift-kick
 leapfrog. Its documented 100-orbit test is in the
 [physics reference](docs/PHYSICS_REFERENCE.md).
+
+The new [galaxy model](docs/GALAXY_MODEL.md) deterministically samples an
+exponential disk and Hernquist bulge, computes a documented initial rotation
+curve, keeps its Plummer halo separate from self-gravity, and removes global
+position and velocity drift before the state reaches a solver.
 
 ## Windows quick start
 
@@ -100,9 +103,10 @@ src/gravity/
 
 The packages now include the startup boundary, local diagnostics, orbit camera,
 input routing, deterministic synthetic field, ModernGL renderer, Dear ImGui
-shell, validated particle state, exact force solver, leapfrog integrator, and
-physical-invariant diagnostics. The exact solver is intentionally independent
-from graphics until the scenario and approximation gates are complete.
+shell, validated particle state, exact force solver, leapfrog integrator,
+physical-invariant diagnostics, analytic halo, and reproducible physical galaxy
+generator. Physics remains intentionally independent from graphics until the
+approximation and coupling gates are complete.
 
 ## Historical version
 

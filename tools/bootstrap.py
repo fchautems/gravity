@@ -18,7 +18,7 @@ from typing import TextIO
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VIRTUAL_ENVIRONMENT = PROJECT_ROOT / ".venv"
-LOCK_FILE = PROJECT_ROOT / "requirements" / "step4.lock"
+LOCK_FILE = PROJECT_ROOT / "requirements" / "step5.lock"
 SUPPORTED_PYTHON = (3, 12)
 PIP_VERSION = "26.2"
 SETUPTOOLS_VERSION = "83.0.0"

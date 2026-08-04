@@ -1,7 +1,7 @@
 # Gravity V1 specification
 
 Status: approved baseline for implementation  
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 ## 1. Product promise
 
@@ -151,10 +151,14 @@ near-zero floor; absolute error is reported for those samples.
 | Barnes-Hut theta | 0.3 to 1.2 | chosen by validation, initially 0.7 |
 | Time scale | paused to 20x visual speed | 1x |
 | Seed | unsigned 32-bit integer | fixed documented seed |
+| Galaxy softening | 0.02 to 0.25 | 0.08 |
+| Fixed galaxy time step | 0.0025 to 0.08 | 0.02 |
+| Disk outer radius | 6.0 to 24.0 | 10.8 |
 
-Ranges for time step, softening, galaxy size, and mass are defined in normalized
-units when the direct reference and galaxy generator are implemented. Until
-then, inventing UI ranges would create false precision.
+These are dimensionless internal values. Step 5 validates the physical scenario
+ranges; step 8 will decide how much of each safe range is exposed in the basic
+and advanced interface. Component-mass editing remains advanced and must
+preserve strictly positive live-particle masses.
 
 ## 10. Test and release policy
 

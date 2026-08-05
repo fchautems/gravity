@@ -383,7 +383,7 @@ class PhysicsWorker:
             SolverMode.BARNES_HUT,
             self._initial_experiment,
             generation=0,
-            paused=False,
+            paused=True,
             time_scale=1.0,
         )
         self._publish(runtime)

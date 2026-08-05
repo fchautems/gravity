@@ -9,7 +9,7 @@ import pytest
 from gravity.core.observation import ColorMode, observe_particles
 from gravity.core.state import ParticleState
 from gravity.rendering.camera import OrbitCamera
-from gravity.rendering.particles import ParticleRenderer, physical_particle_field
+from gravity.rendering.particles import ParticleRenderer, color_legend, physical_particle_field
 from gravity.rendering.shaders import FRAGMENT_SHADER, VERTEX_SHADER
 
 
@@ -238,3 +238,14 @@ def test_physical_colour_modes_encode_distinct_observations() -> None:
     assert len(np.unique(component.vertices[:, 3:6], axis=0)) == 3
     assert np.all(np.isfinite(energy.vertices[:, 3:6]))
     assert ejection.vertices[2, 3] > ejection.vertices[2, 5]
+
+
+def test_each_colour_mode_exposes_a_distinct_readable_legend() -> None:
+    palettes = []
+    for mode in ColorMode:
+        labels, palette = color_legend(mode)
+        assert len(labels) >= 2
+        assert len(palette) >= 2
+        assert len(set(palette)) == len(palette)
+        palettes.append(palette)
+    assert len(set(palettes)) == len(ColorMode)

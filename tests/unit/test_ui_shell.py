@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 from imgui_bundle import imgui
+from imgui_bundle.imgui import internal
 
 from gravity.core.experiment import ExperimentConfig, ScenarioKind
 from gravity.core.observation import ObservationStats, ParticleObservations
@@ -10,7 +11,7 @@ from gravity.core.simulation import SimulationStatus, SolverMode
 from gravity.diagnostics.frame_stats import FrameStats
 from gravity.rendering.particles import GraphicsInfo
 from gravity.ui import strings
-from gravity.ui.panel import UiState, draw_control_panel, draw_performance_overlay
+from gravity.ui.panel import DataDrawer, UiState, draw_control_panel, draw_performance_overlay
 from gravity.ui.theme import configure_theme
 
 
@@ -63,7 +64,7 @@ def _observations(count: int = 10_000) -> ParticleObservations:
 
 def test_theme_and_complete_panel_build_without_a_gpu(imgui_context: None) -> None:
     configure_theme(1.5)
-    assert imgui.get_style().window_rounding == pytest.approx(15.0)
+    assert imgui.get_style().window_rounding == pytest.approx(13.5)
     _begin_headless_frame()
 
     stats = FrameStats()
@@ -104,6 +105,33 @@ def test_hidden_panel_builds_its_settings_surface(imgui_context: None) -> None:
     assert not state.panel_visible
 
 
+def test_data_drawers_fit_without_vertical_scrolling(imgui_context: None) -> None:
+    configure_theme(1.0)
+    state = UiState()
+    for drawer in (
+        DataDrawer.STATISTICS,
+        DataDrawer.PERFORMANCE,
+        DataDrawer.TECHNICAL,
+    ):
+        state.data_drawer = drawer
+        for _ in range(2):
+            _begin_headless_frame()
+            draw_control_panel(
+                state,
+                FrameStats(),
+                simulation=_simulation(paused=True),
+                graphics=GraphicsInfo(330, "GPU", "Vendor", "3.3"),
+                window_size=(1280, 800),
+                dpi_scale=1.0,
+                observations=_observations(),
+            )
+            imgui.render()
+        window = internal.find_window_by_name("Gravity##data-drawer")
+        assert window is not None
+        assert not window.scrollbar_y
+        assert window.content_size_ideal.y < window.size.y
+
+
 def test_new_generation_synchronizes_the_editable_experiment_draft(
     imgui_context: None,
 ) -> None:
@@ -135,6 +163,8 @@ def test_visible_ui_copy_uses_supported_ascii_apostrophes() -> None:
     assert all("’" not in text for text in visible_copy)
 
 
-def test_seed_change_does_not_imply_an_immediate_restart() -> None:
+def test_validated_workflow_copy_replaces_the_old_restart_button() -> None:
     assert strings.CHANGE_SEED == "Changer la graine"
-    assert strings.APPLY_EXPERIMENT == "Appliquer et recommencer"
+    assert strings.START == "Démarrer"
+    assert strings.STOP == "Stop"
+    assert UiState().data_drawer is DataDrawer.NONE

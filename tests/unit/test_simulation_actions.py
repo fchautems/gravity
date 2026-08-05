@@ -58,12 +58,12 @@ def test_controller_translates_all_ui_actions_without_ui_calling_physics() -> No
     )
     _dispatch_simulation_actions(worker, _status(paused=False), actions)  # type: ignore[arg-type]
     assert worker.calls == [
+        ("solver", SolverMode.EXACT),
+        ("experiment", experiment),
         "pause",
         "reset",
         "step",
         ("speed", 1.5),
-        ("solver", SolverMode.EXACT),
-        ("experiment", experiment),
     ]
 
     worker.calls.clear()
@@ -73,3 +73,21 @@ def test_controller_translates_all_ui_actions_without_ui_calling_physics() -> No
         UiActions(toggle_pause=True),
     )
     assert worker.calls == ["resume"]
+
+
+def test_start_and_stop_are_unambiguous_transport_actions() -> None:
+    worker = RecordingWorker()
+    _dispatch_simulation_actions(  # type: ignore[arg-type]
+        worker,
+        _status(paused=True),
+        UiActions(start_simulation=True),
+    )
+    assert worker.calls == ["resume"]
+
+    worker.calls.clear()
+    _dispatch_simulation_actions(  # type: ignore[arg-type]
+        worker,
+        _status(paused=False),
+        UiActions(stop_simulation=True),
+    )
+    assert worker.calls == ["pause", "reset"]

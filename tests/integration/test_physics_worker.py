@@ -64,6 +64,8 @@ def test_worker_defaults_to_barnes_hut_and_exact_requires_explicit_command() -> 
         initial = worker.wait_for_snapshot()
         assert initial.status.solver_mode is SolverMode.BARNES_HUT
         assert initial.status.particle_count == 120
+        assert initial.status.paused
+        assert initial.status.step_count == 0
         assert initial.positions.dtype == np.float32
         assert not initial.positions.flags.writeable
         assert initial.observations is not None

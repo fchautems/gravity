@@ -39,7 +39,16 @@ def _dispatch_simulation_actions(
 ) -> None:
     """Translate UI values into thread-safe worker commands."""
 
-    if actions.toggle_pause:
+    if actions.solver_mode is not None:
+        worker.set_solver(actions.solver_mode)
+    if actions.experiment is not None:
+        worker.set_experiment(actions.experiment)
+    if actions.start_simulation:
+        worker.resume()
+    elif actions.stop_simulation:
+        worker.pause()
+        worker.reset()
+    elif actions.toggle_pause:
         if simulation.paused:
             worker.resume()
         else:
@@ -50,10 +59,6 @@ def _dispatch_simulation_actions(
         worker.single_step()
     if actions.time_scale is not None:
         worker.set_time_scale(actions.time_scale)
-    if actions.solver_mode is not None:
-        worker.set_solver(actions.solver_mode)
-    if actions.experiment is not None:
-        worker.set_experiment(actions.experiment)
 
 
 def run_graphics_app(logger: logging.Logger) -> None:

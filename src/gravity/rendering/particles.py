@@ -14,6 +14,49 @@ from gravity.rendering.shaders import FRAGMENT_SHADER, VERTEX_SHADER
 
 VERTEX_COMPONENTS = 7
 
+type Rgb = tuple[float, float, float]
+
+_DISTANCE_PALETTE: tuple[Rgb, ...] = (
+    (1.00, 0.95, 0.65),
+    (0.34, 0.84, 1.00),
+    (0.44, 0.46, 1.00),
+    (1.00, 0.34, 0.58),
+)
+_SPEED_PALETTE: tuple[Rgb, ...] = (
+    (0.24, 0.86, 0.78),
+    (0.32, 0.62, 1.00),
+    (1.00, 0.86, 0.38),
+    (1.00, 0.29, 0.16),
+)
+_COMPONENT_PALETTE: tuple[Rgb, ...] = (
+    (0.29, 0.80, 1.00),
+    (1.00, 0.55, 0.24),
+    (1.00, 0.93, 0.55),
+)
+_ENERGY_PALETTE: tuple[Rgb, ...] = (
+    (0.26, 0.36, 1.00),
+    (0.28, 0.82, 1.00),
+    (0.93, 0.94, 0.90),
+    (1.00, 0.58, 0.22),
+    (1.00, 0.22, 0.46),
+)
+_EJECTION_PALETTE: tuple[Rgb, ...] = (
+    (0.33, 0.72, 1.00),
+    (1.00, 0.25, 0.43),
+)
+
+
+def color_legend(mode: ColorMode) -> tuple[tuple[str, ...], tuple[Rgb, ...]]:
+    """Return the exact labels and colours shown below a colour selector."""
+
+    return {
+        ColorMode.DISTANCE: (("Centre", "Périphérie"), _DISTANCE_PALETTE),
+        ColorMode.SPEED: (("Lente", "Rapide"), _SPEED_PALETTE),
+        ColorMode.COMPONENT: (("Disque", "Bulbe", "Centre"), _COMPONENT_PALETTE),
+        ColorMode.ENERGY: (("Liée", "Neutre", "Libre"), _ENERGY_PALETTE),
+        ColorMode.EJECTION: (("Liées", "Éjectées"), _EJECTION_PALETTE),
+    }[mode]
+
 
 @dataclass(frozen=True, slots=True)
 class ParticleField:
@@ -45,6 +88,18 @@ def _normalized(values: np.ndarray, percentile: float = 95.0) -> np.ndarray:
     return np.clip(values / scale, 0.0, 1.0)
 
 
+def _sample_palette(values: np.ndarray, palette: tuple[Rgb, ...]) -> np.ndarray:
+    """Interpolate a small perceptual palette for normalized values."""
+
+    normalized = np.clip(np.asarray(values, dtype=np.float64), 0.0, 1.0)
+    stops = np.asarray(palette, dtype=np.float64)
+    scaled = normalized * (len(palette) - 1)
+    lower = np.minimum(scaled.astype(np.int64), len(palette) - 2)
+    blend = scaled - lower
+    sampled = stops[lower] * (1.0 - blend[:, None]) + stops[lower + 1] * blend[:, None]
+    return np.ascontiguousarray(sampled, dtype=np.float64)
+
+
 def _particle_colors(
     positions: np.ndarray,
     observations: ParticleObservations | None,
@@ -52,41 +107,38 @@ def _particle_colors(
 ) -> tuple[np.ndarray, np.ndarray]:
     count = int(positions.shape[0])
     radius = np.linalg.norm(positions, axis=1).astype(np.float64)
-    warm = np.array([1.0, 0.48, 0.20], dtype=np.float64)
-    cool = np.array([0.28, 0.62, 1.0], dtype=np.float64)
     if observations is None or mode is ColorMode.DISTANCE:
-        mix = np.clip(radius / 10.8, 0.0, 1.0)
-        colors = warm[None, :] * (1.0 - mix[:, None]) + cool[None, :] * mix[:, None]
+        measured_radius = radius if observations is None else observations.radii
+        colors = _sample_palette(_normalized(measured_radius, 98.0), _DISTANCE_PALETTE)
     elif mode is ColorMode.SPEED:
-        mix = _normalized(observations.speeds.astype(np.float64))
-        slow = np.array([0.20, 0.48, 1.0], dtype=np.float64)
-        fast = np.array([1.0, 0.28, 0.08], dtype=np.float64)
-        colors = slow[None, :] * (1.0 - mix[:, None]) + fast[None, :] * mix[:, None]
+        colors = _sample_palette(_normalized(observations.speeds, 98.0), _SPEED_PALETTE)
     elif mode is ColorMode.COMPONENT:
-        palette = np.array(
-            [[0.30, 0.68, 1.0], [1.0, 0.48, 0.18], [1.0, 0.94, 0.58]],
-            dtype=np.float64,
-        )
+        palette = np.asarray(_COMPONENT_PALETTE, dtype=np.float64)
         colors = palette[np.minimum(observations.components, 2)]
     elif mode is ColorMode.ENERGY:
         energy = observations.specific_energies.astype(np.float64)
-        scale = max(float(np.percentile(np.abs(energy), 95.0)), 1.0e-9)
-        signed = np.clip(energy / scale, -1.0, 1.0)
-        neutral = np.array([0.88, 0.88, 0.88], dtype=np.float64)
-        bound = np.array([0.18, 0.48, 1.0], dtype=np.float64)
-        free = np.array([1.0, 0.24, 0.08], dtype=np.float64)
-        colors = np.empty((count, 3), dtype=np.float64)
-        negative = signed < 0.0
-        colors[negative] = neutral[None, :] * (1.0 + signed[negative, None]) + bound[None, :] * (
-            -signed[negative, None]
+        negative = energy < 0.0
+        negative_scale = max(
+            float(np.percentile(np.abs(energy[negative]), 95.0)) if np.any(negative) else 0.0,
+            1.0e-9,
         )
-        colors[~negative] = (
-            neutral[None, :] * (1.0 - signed[~negative, None])
-            + free[None, :] * signed[~negative, None]
+        positive_scale = max(
+            float(np.percentile(energy[~negative], 95.0)) if np.any(~negative) else 0.0,
+            1.0e-9,
         )
+        normalized_energy = np.empty(count, dtype=np.float64)
+        normalized_energy[negative] = 0.5 * (
+            1.0 - np.clip(np.abs(energy[negative]) / negative_scale, 0.0, 1.0)
+        )
+        normalized_energy[~negative] = 0.5 + 0.5 * np.clip(
+            energy[~negative] / positive_scale,
+            0.0,
+            1.0,
+        )
+        colors = _sample_palette(normalized_energy, _ENERGY_PALETTE)
     else:
-        colors = np.tile(np.array([0.30, 0.66, 1.0], dtype=np.float64), (count, 1))
-        colors[observations.ejected] = np.array([1.0, 0.20, 0.08], dtype=np.float64)
+        colors = np.tile(np.asarray(_EJECTION_PALETTE[0]), (count, 1))
+        colors[observations.ejected] = _EJECTION_PALETTE[1]
 
     return colors, radius
 

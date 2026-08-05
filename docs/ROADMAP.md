@@ -230,8 +230,15 @@ solver:
   not fire while a text field captures the keyboard;
 - requested/effective speed exposes the live compute ceiling instead of implying
   that the speed slider can outrun the solver;
-- the panel prioritises controls, observation, and experiment setup; performance
-  and technical sections are collapsed by default.
+- the validated panel follows the workflow experiment, start, simulation,
+  observation, with an initial paused preview and an explicit stop-to-preview
+  action;
+- statistics, performance, and technical comparison live in a fixed bottom dock
+  whose drawers never require vertical scrolling or cover the simulation;
+- every colour mode has a dedicated high-contrast palette and matching legend;
+  the centre-of-mass marker remains a first-class observation toggle;
+- the exact O(N2) engine remains available only in the technical drawer, with
+  its explicit 1,000-particle safety limit.
 
 See `docs/STEP9_VALIDATION.md` for the short Windows visual and interaction gate.
 

@@ -19,6 +19,7 @@ def test_observation_classifies_only_distant_outgoing_unbound_particles() -> Non
     observed = observe_particles(
         state,
         np.array([0, 1, 2, 0], dtype=np.uint8),
+        np.array([0, 0, 1, 1], dtype=np.uint8),
         (),
         softening=0.08,
         ejection_radius=10.0,
@@ -27,6 +28,8 @@ def test_observation_classifies_only_distant_outgoing_unbound_particles() -> Non
     np.testing.assert_array_equal(observed.ejected, [False, False, True, True])
     assert observed.stats.ejected_count == 2
     assert observed.stats.center_of_mass == (0.0, 0.0, 0.0)
+    np.testing.assert_array_equal(observed.origins, [0, 0, 1, 1])
+    np.testing.assert_allclose(observed.masses, 0.25)
     assert not observed.radii.flags.writeable
 
 

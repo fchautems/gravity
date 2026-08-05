@@ -22,7 +22,8 @@ class ColorMode(StrEnum):
 
     DISTANCE = "distance"
     SPEED = "speed"
-    COMPONENT = "component"
+    MASS = "mass"
+    ORIGIN = "origin"
     ENERGY = "energy"
     EJECTION = "ejection"
 
@@ -31,7 +32,8 @@ class ColorMode(StrEnum):
         return {
             ColorMode.DISTANCE: "Distance au centre",
             ColorMode.SPEED: "Vitesse",
-            ColorMode.COMPONENT: "Composant d'origine",
+            ColorMode.MASS: "Masse",
+            ColorMode.ORIGIN: "Objet d'origine",
             ColorMode.ENERGY: "Énergie orbitale",
             ColorMode.EJECTION: "Liées / éjectées",
         }[self]
@@ -73,21 +75,33 @@ class ParticleObservations:
     radii: Float32Array
     speeds: Float32Array
     specific_energies: Float32Array
+    masses: Float32Array
     components: UInt8Array
+    origins: UInt8Array
     ejected: BoolArray
     stats: ObservationStats
 
     def __post_init__(self) -> None:
         count = int(self.radii.shape[0])
-        arrays = (self.radii, self.speeds, self.specific_energies, self.components, self.ejected)
+        arrays = (
+            self.radii,
+            self.speeds,
+            self.specific_energies,
+            self.masses,
+            self.components,
+            self.origins,
+            self.ejected,
+        )
         if count < 1 or any(array.shape != (count,) for array in arrays):
             raise ValueError("observation arrays must share one non-empty shape")
         if self.radii.dtype != np.float32 or self.speeds.dtype != np.float32:
             raise TypeError("radii and speeds must use float32")
-        if self.specific_energies.dtype != np.float32:
-            raise TypeError("specific_energies must use float32")
-        if self.components.dtype != np.uint8 or self.ejected.dtype != np.bool_:
-            raise TypeError("components/ejected use uint8/bool")
+        if self.specific_energies.dtype != np.float32 or self.masses.dtype != np.float32:
+            raise TypeError("specific_energies and masses must use float32")
+        if self.components.dtype != np.uint8 or self.origins.dtype != np.uint8:
+            raise TypeError("components and origins must use uint8")
+        if self.ejected.dtype != np.bool_:
+            raise TypeError("ejected must use bool")
         if not all(array.flags.c_contiguous for array in arrays):
             raise ValueError("observation arrays must be C-contiguous")
         if not all(np.all(np.isfinite(array)) for array in arrays[:3]):
@@ -109,6 +123,7 @@ def initial_ejection_radius(state: ParticleState) -> float:
 def observe_particles(
     state: ParticleState,
     components: UInt8Array,
+    origins: UInt8Array,
     external_fields: tuple[object, ...],
     *,
     softening: float,
@@ -168,7 +183,9 @@ def observe_particles(
         radii=np.ascontiguousarray(radii64, dtype=np.float32),
         speeds=np.ascontiguousarray(speeds64, dtype=np.float32),
         specific_energies=np.ascontiguousarray(specific_energy, dtype=np.float32),
+        masses=np.ascontiguousarray(state.masses, dtype=np.float32),
         components=np.ascontiguousarray(components, dtype=np.uint8),
+        origins=np.ascontiguousarray(origins, dtype=np.uint8),
         ejected=np.ascontiguousarray(ejected, dtype=np.bool_),
         stats=stats,
     )

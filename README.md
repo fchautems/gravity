@@ -21,8 +21,10 @@ random cloud, and total chaos. The worker publishes only complete immutable
 snapshots; rendering reuses the newest one and never waits for a force
 calculation.
 
-Five colour modes expose distance, speed, origin component, approximate orbital
-energy, or ejection state. The worker reports the centre of mass, median radius,
+Six colour modes expose distance, speed, actual particle mass, immutable object
+of origin, approximate orbital energy, or ejection state. Disk, bulge, and
+central live masses can be adjusted in the advanced experiment settings. The
+worker reports the centre of mass, median radius,
 maximum speed, estimated energy drift, and a conservative ejection count in
 linear time. Canonical top/profile/perspective views and a centre-of-mass marker
 help compare scenarios. Space pauses, `R` recentres, `F` toggles fullscreen, and

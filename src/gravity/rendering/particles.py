@@ -17,32 +17,38 @@ VERTEX_COMPONENTS = 7
 type Rgb = tuple[float, float, float]
 
 _DISTANCE_PALETTE: tuple[Rgb, ...] = (
-    (1.00, 0.95, 0.65),
-    (0.34, 0.84, 1.00),
-    (0.44, 0.46, 1.00),
-    (1.00, 0.34, 0.58),
+    (1.00, 0.88, 0.18),
+    (0.12, 0.92, 0.98),
+    (0.18, 0.34, 1.00),
+    (1.00, 0.12, 0.62),
 )
 _SPEED_PALETTE: tuple[Rgb, ...] = (
-    (0.24, 0.86, 0.78),
-    (0.32, 0.62, 1.00),
-    (1.00, 0.86, 0.38),
-    (1.00, 0.29, 0.16),
+    (0.10, 0.95, 0.54),
+    (0.08, 0.60, 1.00),
+    (1.00, 0.88, 0.08),
+    (1.00, 0.12, 0.06),
 )
-_COMPONENT_PALETTE: tuple[Rgb, ...] = (
-    (0.29, 0.80, 1.00),
-    (1.00, 0.55, 0.24),
-    (1.00, 0.93, 0.55),
+_MASS_PALETTE: tuple[Rgb, ...] = (
+    (0.10, 0.72, 1.00),
+    (0.96, 0.90, 0.18),
+    (1.00, 0.12, 0.32),
+)
+_ORIGIN_PALETTE: tuple[Rgb, ...] = (
+    (1.00, 0.28, 0.08),
+    (0.02, 0.82, 1.00),
+    (0.76, 0.22, 1.00),
+    (0.34, 1.00, 0.18),
 )
 _ENERGY_PALETTE: tuple[Rgb, ...] = (
-    (0.26, 0.36, 1.00),
-    (0.28, 0.82, 1.00),
-    (0.93, 0.94, 0.90),
-    (1.00, 0.58, 0.22),
-    (1.00, 0.22, 0.46),
+    (0.16, 0.20, 1.00),
+    (0.04, 0.88, 1.00),
+    (0.98, 0.98, 0.94),
+    (1.00, 0.52, 0.06),
+    (1.00, 0.08, 0.42),
 )
 _EJECTION_PALETTE: tuple[Rgb, ...] = (
-    (0.33, 0.72, 1.00),
-    (1.00, 0.25, 0.43),
+    (0.12, 0.72, 1.00),
+    (1.00, 0.16, 0.08),
 )
 
 
@@ -52,7 +58,8 @@ def color_legend(mode: ColorMode) -> tuple[tuple[str, ...], tuple[Rgb, ...]]:
     return {
         ColorMode.DISTANCE: (("Centre", "Périphérie"), _DISTANCE_PALETTE),
         ColorMode.SPEED: (("Lente", "Rapide"), _SPEED_PALETTE),
-        ColorMode.COMPONENT: (("Disque", "Bulbe", "Centre"), _COMPONENT_PALETTE),
+        ColorMode.MASS: (("Légère", "Intermédiaire", "Lourde"), _MASS_PALETTE),
+        ColorMode.ORIGIN: (("Objet A", "Objet B", "Objet C+"), _ORIGIN_PALETTE),
         ColorMode.ENERGY: (("Liée", "Neutre", "Libre"), _ENERGY_PALETTE),
         ColorMode.EJECTION: (("Liées", "Éjectées"), _EJECTION_PALETTE),
     }[mode]
@@ -83,9 +90,32 @@ class ParticleField:
         return int(self.vertices.nbytes)
 
 
-def _normalized(values: np.ndarray, percentile: float = 95.0) -> np.ndarray:
-    scale = max(float(np.percentile(np.abs(values), percentile)), 1.0e-9)
-    return np.clip(values / scale, 0.0, 1.0)
+def _normalized_visible_range(
+    values: np.ndarray,
+    lower_percentile: float = 2.0,
+    upper_percentile: float = 98.0,
+) -> np.ndarray:
+    """Spread the values actually present across the complete visual palette."""
+
+    measured = np.asarray(values, dtype=np.float64)
+    lower, upper = np.percentile(measured, (lower_percentile, upper_percentile))
+    span = float(upper - lower)
+    if span <= 1.0e-12:
+        return np.full(measured.shape, 0.5, dtype=np.float64)
+    return np.ascontiguousarray(
+        np.clip((measured - lower) / span, 0.0, 1.0),
+        dtype=np.float64,
+    )
+
+
+def _ranked_masses(masses: np.ndarray) -> np.ndarray:
+    """Give every distinct simulated mass an equally visible colour rank."""
+
+    _, inverse = np.unique(np.asarray(masses, dtype=np.float32), return_inverse=True)
+    levels = int(np.max(inverse)) + 1
+    if levels == 1:
+        return np.full(inverse.shape, 0.5, dtype=np.float64)
+    return inverse.astype(np.float64) / float(levels - 1)
 
 
 def _sample_palette(values: np.ndarray, palette: tuple[Rgb, ...]) -> np.ndarray:
@@ -109,12 +139,14 @@ def _particle_colors(
     radius = np.linalg.norm(positions, axis=1).astype(np.float64)
     if observations is None or mode is ColorMode.DISTANCE:
         measured_radius = radius if observations is None else observations.radii
-        colors = _sample_palette(_normalized(measured_radius, 98.0), _DISTANCE_PALETTE)
+        colors = _sample_palette(_normalized_visible_range(measured_radius), _DISTANCE_PALETTE)
     elif mode is ColorMode.SPEED:
-        colors = _sample_palette(_normalized(observations.speeds, 98.0), _SPEED_PALETTE)
-    elif mode is ColorMode.COMPONENT:
-        palette = np.asarray(_COMPONENT_PALETTE, dtype=np.float64)
-        colors = palette[np.minimum(observations.components, 2)]
+        colors = _sample_palette(_normalized_visible_range(observations.speeds), _SPEED_PALETTE)
+    elif mode is ColorMode.MASS:
+        colors = _sample_palette(_ranked_masses(observations.masses), _MASS_PALETTE)
+    elif mode is ColorMode.ORIGIN:
+        palette = np.asarray(_ORIGIN_PALETTE, dtype=np.float64)
+        colors = palette[np.minimum(observations.origins, len(_ORIGIN_PALETTE) - 1)]
     elif mode is ColorMode.ENERGY:
         energy = observations.specific_energies.astype(np.float64)
         negative = energy < 0.0
@@ -168,7 +200,7 @@ def physical_particle_field(
     indices = np.arange(count, dtype=np.uint64)
     noise = (indices * np.uint64(1_664_525) + np.uint64(1_013_904_223)) & 0xFFFF_FFFF
     sparkle = noise.astype(np.float64) / float(0xFFFF_FFFF)
-    colors *= (0.91 + 0.18 * sparkle)[:, None]
+    colors *= (0.96 + 0.08 * sparkle)[:, None]
     colors = np.clip(colors, 0.08, 1.0)
     sizes = 1.15 + 2.7 * np.exp(-radius / 2.6) + 0.75 * sparkle
 

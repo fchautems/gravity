@@ -27,6 +27,7 @@ SPHERE_RADIUS = 5.5
 RANDOM_EXTENT = 5.5
 
 type ComponentArray = npt.NDArray[np.uint8]
+type OriginArray = npt.NDArray[np.uint8]
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +36,7 @@ class GeneratedScenario:
 
     state: ParticleState
     components: ComponentArray
+    origins: OriginArray
     experiment: ExperimentConfig
     external_fields: tuple[AdditiveAccelerationField, ...] = ()
     time_step: float = DEFAULT_TIME_STEP
@@ -43,18 +45,18 @@ class GeneratedScenario:
     def __post_init__(self) -> None:
         if self.state.particle_count != self.experiment.particle_count:
             raise ValueError("state and experiment particle counts differ")
-        components = self.components
-        if not isinstance(components, np.ndarray) or components.dtype != np.uint8:
-            raise TypeError("components must be a uint8 NumPy array")
-        if components.shape != (self.state.particle_count,):
-            raise ValueError(f"components must have shape ({self.state.particle_count},)")
-        if not components.flags.c_contiguous:
-            raise ValueError("components must be C-contiguous")
+        for name, labels in (("components", self.components), ("origins", self.origins)):
+            if not isinstance(labels, np.ndarray) or labels.dtype != np.uint8:
+                raise TypeError(f"{name} must be a uint8 NumPy array")
+            if labels.shape != (self.state.particle_count,):
+                raise ValueError(f"{name} must have shape ({self.state.particle_count},)")
+            if not labels.flags.c_contiguous:
+                raise ValueError(f"{name} must be C-contiguous")
+            labels.setflags(write=False)
         if not math.isfinite(self.time_step) or self.time_step <= 0.0:
             raise ValueError("time_step must be finite and positive")
         if not math.isfinite(self.softening) or self.softening < 0.0:
             raise ValueError("softening must be finite and non-negative")
-        components.setflags(write=False)
 
     @property
     def name(self) -> str:
@@ -67,6 +69,10 @@ def _equal_masses(count: int, total_mass: float = DEFAULT_LIVE_MASS) -> FloatArr
 
 def _generic_components(count: int) -> ComponentArray:
     return np.full(count, GalaxyComponent.DISK.value, dtype=np.uint8)
+
+
+def _single_origin(count: int) -> OriginArray:
+    return np.zeros(count, dtype=np.uint8)
 
 
 def _remove_bulk_motion(
@@ -86,6 +92,7 @@ def _assemble_generic(
     *,
     masses: FloatArray | None = None,
     components: ComponentArray | None = None,
+    origins: OriginArray | None = None,
     external_fields: tuple[AdditiveAccelerationField, ...] = (),
 ) -> GeneratedScenario:
     selected_masses = _equal_masses(experiment.particle_count) if masses is None else masses
@@ -94,9 +101,11 @@ def _assemble_generic(
     selected_components = (
         _generic_components(experiment.particle_count) if components is None else components
     )
+    selected_origins = _single_origin(experiment.particle_count) if origins is None else origins
     return GeneratedScenario(
         state=state,
         components=np.ascontiguousarray(selected_components, dtype=np.uint8),
+        origins=np.ascontiguousarray(selected_origins, dtype=np.uint8),
         experiment=experiment,
         external_fields=external_fields,
     )
@@ -225,13 +234,17 @@ def _generate_random_cloud(
     return _assemble_generic(experiment, positions, velocities)
 
 
-def _small_galaxy_config(count: int, seed: int) -> GalaxyConfig:
+def _small_galaxy_config(
+    experiment: ExperimentConfig,
+    count: int,
+    seed: int,
+) -> GalaxyConfig:
     return GalaxyConfig(
         particle_count=count,
         seed=seed,
-        disk_mass=0.30,
-        bulge_mass=0.10,
-        central_mass=0.01,
+        disk_mass=experiment.disk_mass / 2.0,
+        bulge_mass=experiment.bulge_mass / 2.0,
+        central_mass=experiment.central_mass / 2.0,
         halo_mass=0.0,
         disk_scale_length=1.30,
         disk_outer_radius=6.0,
@@ -261,9 +274,9 @@ def _generate_collision(
 ) -> GeneratedScenario:
     left_count = experiment.particle_count // 2
     right_count = experiment.particle_count - left_count
-    left = generate_spiral_galaxy(_small_galaxy_config(left_count, experiment.seed))
+    left = generate_spiral_galaxy(_small_galaxy_config(experiment, left_count, experiment.seed))
     right_seed = (experiment.seed * 1_664_525 + 1_013_904_223) & 0x7FFF_FFFF
-    right = generate_spiral_galaxy(_small_galaxy_config(right_count, right_seed))
+    right = generate_spiral_galaxy(_small_galaxy_config(experiment, right_count, right_seed))
 
     left_positions = left.state.positions.copy()
     right_positions = right.state.positions.copy()
@@ -288,6 +301,12 @@ def _generate_collision(
     velocities = np.ascontiguousarray(np.vstack((left_velocities, right_velocities)))
     masses = np.ascontiguousarray(np.concatenate((left.state.masses, right.state.masses)))
     components = np.ascontiguousarray(np.concatenate((left.components, right.components)))
+    origins = np.concatenate(
+        (
+            np.zeros(left_count, dtype=np.uint8),
+            np.ones(right_count, dtype=np.uint8),
+        )
+    )
     rng = np.random.default_rng(experiment.seed ^ 0x4A17_3C29)
     order = rng.permutation(experiment.particle_count)
     return _assemble_generic(
@@ -296,16 +315,24 @@ def _generate_collision(
         velocities[order],
         masses=masses[order],
         components=components[order],
+        origins=origins[order],
     )
 
 
 def _generate_spiral(experiment: ExperimentConfig) -> GeneratedScenario:
     galaxy = generate_spiral_galaxy(
-        GalaxyConfig(particle_count=experiment.particle_count, seed=experiment.seed)
+        GalaxyConfig(
+            particle_count=experiment.particle_count,
+            seed=experiment.seed,
+            disk_mass=experiment.disk_mass,
+            bulge_mass=experiment.bulge_mass,
+            central_mass=experiment.central_mass,
+        )
     )
     return GeneratedScenario(
         state=galaxy.state,
         components=galaxy.components,
+        origins=_single_origin(experiment.particle_count),
         experiment=experiment,
         external_fields=(galaxy.mass_model.halo,),
         time_step=galaxy.config.time_step,

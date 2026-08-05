@@ -56,7 +56,9 @@ def _observations(count: int = 10_000) -> ParticleObservations:
         radii=np.zeros(count, dtype=np.float32),
         speeds=np.zeros(count, dtype=np.float32),
         specific_energies=np.zeros(count, dtype=np.float32),
+        masses=np.ones(count, dtype=np.float32),
         components=np.zeros(count, dtype=np.uint8),
+        origins=np.zeros(count, dtype=np.uint8),
         ejected=np.zeros(count, dtype=np.bool_),
         stats=ObservationStats((0.0, 0.0, 0.0), 2.5, 0.7, -0.3, 0.1, 12.0, 0),
     )
@@ -112,6 +114,7 @@ def test_data_drawers_fit_without_vertical_scrolling(imgui_context: None) -> Non
         DataDrawer.STATISTICS,
         DataDrawer.PERFORMANCE,
         DataDrawer.TECHNICAL,
+        DataDrawer.MASSES,
     ):
         state.data_drawer = drawer
         for _ in range(2):
@@ -151,6 +154,9 @@ def test_new_generation_synchronizes_the_editable_experiment_draft(
     assert state.draft_scenario is ScenarioKind.RING
     assert state.draft_particle_count == 5_000
     assert state.draft_seed == 4321
+    assert state.draft_disk_mass == pytest.approx(experiment.disk_mass)
+    assert state.draft_bulge_mass == pytest.approx(experiment.bulge_mass)
+    assert state.draft_central_mass == pytest.approx(experiment.central_mass)
     assert state.synced_generation == 7
 
 

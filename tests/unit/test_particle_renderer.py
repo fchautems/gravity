@@ -218,10 +218,11 @@ def test_physical_colour_modes_encode_distinct_observations() -> None:
     state = ParticleState.from_arrays(
         positions64,
         [[0.0, 0.0, 0.0], [0.1, 0.0, 0.0], [2.0, 0.0, 0.0]],
-        [0.3, 0.3, 0.4],
+        [0.2, 0.3, 0.5],
     )
     observations = observe_particles(
         state,
+        np.array([0, 1, 2], dtype=np.uint8),
         np.array([0, 1, 2], dtype=np.uint8),
         (),
         softening=0.08,
@@ -231,13 +232,28 @@ def test_physical_colour_modes_encode_distinct_observations() -> None:
     positions = np.ascontiguousarray(positions64, dtype=np.float32)
     distance = physical_particle_field(positions, observations, ColorMode.DISTANCE)
     speed = physical_particle_field(positions, observations, ColorMode.SPEED)
-    component = physical_particle_field(positions, observations, ColorMode.COMPONENT)
+    mass = physical_particle_field(positions, observations, ColorMode.MASS)
+    origin = physical_particle_field(positions, observations, ColorMode.ORIGIN)
     energy = physical_particle_field(positions, observations, ColorMode.ENERGY)
     ejection = physical_particle_field(positions, observations, ColorMode.EJECTION)
     assert not np.array_equal(distance.vertices[:, 3:6], speed.vertices[:, 3:6])
-    assert len(np.unique(component.vertices[:, 3:6], axis=0)) == 3
+    assert len(np.unique(mass.vertices[:, 3:6], axis=0)) == 3
+    assert len(np.unique(origin.vertices[:, 3:6], axis=0)) == 3
     assert np.all(np.isfinite(energy.vertices[:, 3:6]))
-    assert ejection.vertices[2, 3] > ejection.vertices[2, 5]
+    ejected_index = int(np.flatnonzero(observations.ejected)[0])
+    assert ejection.vertices[ejected_index, 3] > ejection.vertices[ejected_index, 5]
+
+
+def test_continuous_colour_modes_use_the_full_visible_range() -> None:
+    positions = np.array(
+        [[5.0, 0.0, 0.0], [6.0, 0.0, 0.0], [7.0, 0.0, 0.0], [8.0, 0.0, 0.0]],
+        dtype=np.float32,
+    )
+    field = physical_particle_field(positions, color_mode=ColorMode.DISTANCE)
+    colours = field.vertices[:, 3:6]
+    assert np.ptp(colours[:, 0]) > 0.5
+    assert np.ptp(colours[:, 1]) > 0.4
+    assert np.ptp(colours[:, 2]) > 0.5
 
 
 def test_each_colour_mode_exposes_a_distinct_readable_legend() -> None:

@@ -41,8 +41,8 @@ void main() {
 
     float core = pow(max(0.0, 1.0 - radius), 1.55);
     float edge = smoothstep(1.0, 0.55, radius);
-    float alpha = (0.24 * edge + 0.88 * core) * particle_strength;
-    vec3 luminous_color = particle_color * (0.72 + 1.45 * core);
+    float alpha = (0.22 * edge + 0.82 * core) * particle_strength;
+    vec3 luminous_color = particle_color * (0.80 + 0.95 * core);
     fragment_color = vec4(luminous_color, alpha);
 }
 """

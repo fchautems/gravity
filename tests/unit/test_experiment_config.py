@@ -5,6 +5,9 @@ from dataclasses import replace
 import pytest
 
 from gravity.core.experiment import (
+    DEFAULT_BULGE_MASS,
+    DEFAULT_CENTRAL_MASS,
+    DEFAULT_DISK_MASS,
     MAX_EXPERIMENT_SEED,
     MAX_PARTICLE_COUNT,
     MIN_PARTICLE_COUNT,
@@ -28,6 +31,10 @@ def test_default_experiment_is_the_published_spiral_setup() -> None:
     assert experiment.scenario is ScenarioKind.SPIRAL_GALAXY
     assert experiment.particle_count == 10_000
     assert experiment.seed == 2_026_080_3
+    assert experiment.disk_mass == DEFAULT_DISK_MASS
+    assert experiment.bulge_mass == DEFAULT_BULGE_MASS
+    assert experiment.central_mass == DEFAULT_CENTRAL_MASS
+    assert experiment.uses_galaxy_components
     assert estimated_barnes_hut_load(experiment.particle_count) == pytest.approx(1.0)
 
 
@@ -41,6 +48,9 @@ def test_default_experiment_is_the_published_spiral_setup() -> None:
         ({"seed": -1}, ValueError),
         ({"seed": MAX_EXPERIMENT_SEED + 1}, ValueError),
         ({"seed": 1.5}, TypeError),
+        ({"disk_mass": 0.0}, ValueError),
+        ({"bulge_mass": float("inf")}, ValueError),
+        ({"central_mass": -0.01}, ValueError),
     ],
 )
 def test_invalid_experiment_boundaries_are_rejected(
@@ -70,3 +80,10 @@ def test_load_estimate_is_monotonic_and_validated() -> None:
     assert loads[-1] > 5.0
     with pytest.raises(ValueError):
         estimated_barnes_hut_load(50_001)
+
+
+def test_only_galaxy_based_scenarios_use_the_component_mass_controls() -> None:
+    assert ExperimentConfig(ScenarioKind.SPIRAL_GALAXY).uses_galaxy_components
+    assert ExperimentConfig(ScenarioKind.HEAD_ON_COLLISION).uses_galaxy_components
+    assert ExperimentConfig(ScenarioKind.OBLIQUE_COLLISION).uses_galaxy_components
+    assert not ExperimentConfig(ScenarioKind.RING).uses_galaxy_components

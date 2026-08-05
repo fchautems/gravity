@@ -9,8 +9,14 @@ from enum import StrEnum
 from imgui_bundle import imgui
 
 from gravity.core.experiment import (
+    DEFAULT_BULGE_MASS,
+    DEFAULT_CENTRAL_MASS,
+    DEFAULT_DISK_MASS,
+    MAX_CENTRAL_MASS,
     MAX_EXPERIMENT_SEED,
+    MAX_EXTENDED_MASS,
     MAX_PARTICLE_COUNT,
+    MIN_EXTENDED_MASS,
     SCENARIO_CATALOG,
     ExperimentConfig,
     ScenarioKind,
@@ -28,6 +34,7 @@ class DataDrawer(StrEnum):
     """Optional detail surface anchored above the panel dock."""
 
     NONE = "none"
+    MASSES = "masses"
     STATISTICS = "statistics"
     PERFORMANCE = "performance"
     TECHNICAL = "technical"
@@ -41,6 +48,9 @@ class UiState:
     draft_scenario: ScenarioKind = ScenarioKind.SPIRAL_GALAXY
     draft_particle_count: int = 10_000
     draft_seed: int = 2_026_080_3
+    draft_disk_mass: float = DEFAULT_DISK_MASS
+    draft_bulge_mass: float = DEFAULT_BULGE_MASS
+    draft_central_mass: float = DEFAULT_CENTRAL_MASS
     synced_generation: int = -1
     color_mode: ColorMode = ColorMode.DISTANCE
     camera_view: CameraView = CameraView.PERSPECTIVE
@@ -76,6 +86,9 @@ def _synchronize_experiment_draft(state: UiState, simulation: SimulationStatus) 
     state.draft_scenario = experiment.scenario
     state.draft_particle_count = experiment.particle_count
     state.draft_seed = experiment.seed
+    state.draft_disk_mass = experiment.disk_mass
+    state.draft_bulge_mass = experiment.bulge_mass
+    state.draft_central_mass = experiment.central_mass
     state.synced_generation = simulation.generation
 
 
@@ -211,9 +224,21 @@ def _draw_experiment(
         scenario=state.draft_scenario,
         particle_count=state.draft_particle_count,
         seed=state.draft_seed,
+        disk_mass=state.draft_disk_mass,
+        bulge_mass=state.draft_bulge_mass,
+        central_mass=state.draft_central_mass,
     )
     load = estimated_barnes_hut_load(candidate.particle_count)
     imgui.text_disabled(f"Charge Barnes–Hut estimée : {load:.2f}x")
+    imgui.same_line()
+    imgui.begin_disabled(not candidate.uses_galaxy_components)
+    if imgui.small_button("Masses avancées…"):
+        state.data_drawer = DataDrawer.MASSES
+    imgui.end_disabled()
+    if not candidate.uses_galaxy_components and imgui.is_item_hovered(
+        imgui.HoveredFlags_.allow_when_disabled
+    ):
+        imgui.set_tooltip("Disponible pour les galaxies et les collisions.")
 
     imgui.begin_disabled(not preview)
     start = _colored_button(
@@ -336,14 +361,29 @@ def _draw_observation(
     imgui.set_next_item_width(-1.0)
     color_modes = list(ColorMode)
     color_index = color_modes.index(state.color_mode)
+    imgui.push_style_color(imgui.Col_.text, (0.96, 0.98, 1.00, 1.00))
     changed, color_index = imgui.combo(
-        "##color-mode",
-        color_index,
-        [mode.french_name for mode in color_modes],
+        "##color-mode", color_index, [mode.french_name for mode in color_modes]
     )
+    imgui.pop_style_color()
     if changed:
         state.color_mode = color_modes[color_index]
     _draw_color_legend(state.color_mode, dpi_scale)
+
+    _, state.show_center_of_mass = imgui.checkbox(
+        strings.SHOW_CENTER,
+        state.show_center_of_mass,
+    )
+    if observations is not None:
+        ejected = observations.stats.ejected_count
+        linked = simulation.particle_count - ejected
+        imgui.same_line()
+        imgui.text_colored(
+            (0.70, 0.80, 0.92, 1.00),
+            f"{_format_particle_count(linked)} liées",
+        )
+        imgui.same_line()
+        imgui.text_colored((1.00, 0.48, 0.34, 1.00), f"· {ejected} éjectées")
 
     imgui.text("Point de vue")
     spacing = imgui.get_style().item_spacing.x
@@ -356,30 +396,18 @@ def _draw_observation(
             state.camera_view = view
             selected_view = view
 
-    _, state.show_center_of_mass = imgui.checkbox(
-        strings.SHOW_CENTER,
-        state.show_center_of_mass,
-    )
-    if observations is not None:
-        ejected = observations.stats.ejected_count
-        linked = simulation.particle_count - ejected
-        imgui.text_colored(
-            (0.70, 0.80, 0.92, 1.00),
-            f"{_format_particle_count(linked)} liées",
-        )
-        imgui.same_line()
-        imgui.text_colored((1.00, 0.48, 0.34, 1.00), f"·  {ejected} éjectées")
     return selected_view
 
 
 def _drawer_button(label: str, drawer: DataDrawer, state: UiState, width: float) -> None:
-    active = state.data_drawer is drawer
+    active = state.data_drawer == drawer
     clicked = _view_button(label, active, width)
     if clicked:
-        state.data_drawer = DataDrawer.NONE if active else drawer
+        state.data_drawer = DataDrawer.NONE if state.data_drawer == drawer else drawer
 
 
-def _draw_data_dock(state: UiState) -> None:
+def _draw_data_dock(state: UiState) -> float:
+    dock_top_y = imgui.get_cursor_screen_pos().y
     spacing = imgui.get_style().item_spacing.x
     width = (imgui.get_content_region_avail().x - 2.0 * spacing) / 3.0
     _drawer_button("Statistiques", DataDrawer.STATISTICS, state, width)
@@ -387,6 +415,7 @@ def _draw_data_dock(state: UiState) -> None:
     _drawer_button("Performances", DataDrawer.PERFORMANCE, state, width)
     imgui.same_line()
     _drawer_button("Technique", DataDrawer.TECHNICAL, state, width)
+    return dock_top_y
 
 
 def _metric(label: str, value: str, *, accent: bool = False) -> None:
@@ -465,6 +494,87 @@ def _draw_technical_drawer(
     return selected_solver
 
 
+def _draw_mass_drawer(
+    state: UiState,
+    simulation: SimulationStatus,
+) -> ExperimentConfig | None:
+    preview = simulation.paused and simulation.step_count == 0
+    applicable = state.draft_scenario in (
+        ScenarioKind.SPIRAL_GALAXY,
+        ScenarioKind.HEAD_ON_COLLISION,
+        ScenarioKind.OBLIQUE_COLLISION,
+    )
+    imgui.text_wrapped(
+        "Masses totales du système. Dans une collision, elles sont réparties entre les galaxies."
+    )
+    imgui.begin_disabled(not preview or not applicable)
+    imgui.text("Disque")
+    imgui.set_next_item_width(-1.0)
+    changed, value = imgui.input_float(
+        "##disk-mass",
+        state.draft_disk_mass,
+        0.05,
+        0.25,
+        "%.3f",
+    )
+    if changed:
+        state.draft_disk_mass = min(MAX_EXTENDED_MASS, max(MIN_EXTENDED_MASS, value))
+    imgui.text("Bulbe")
+    imgui.set_next_item_width(-1.0)
+    changed, value = imgui.input_float(
+        "##bulge-mass",
+        state.draft_bulge_mass,
+        0.05,
+        0.25,
+        "%.3f",
+    )
+    if changed:
+        state.draft_bulge_mass = min(MAX_EXTENDED_MASS, max(MIN_EXTENDED_MASS, value))
+    imgui.text("Centre")
+    imgui.set_next_item_width(-1.0)
+    changed, value = imgui.input_float(
+        "##central-mass",
+        state.draft_central_mass,
+        0.01,
+        0.05,
+        "%.3f",
+    )
+    if changed:
+        state.draft_central_mass = min(MAX_CENTRAL_MASS, max(0.0, value))
+
+    spacing = imgui.get_style().item_spacing.x
+    button_width = (imgui.get_content_region_avail().x - spacing) / 2.0
+    if imgui.button("Valeurs par défaut", (button_width, 0.0)):
+        state.draft_disk_mass = DEFAULT_DISK_MASS
+        state.draft_bulge_mass = DEFAULT_BULGE_MASS
+        state.draft_central_mass = DEFAULT_CENTRAL_MASS
+    imgui.same_line()
+    apply_masses = _colored_button(
+        "Appliquer",
+        (button_width, 0.0),
+        (
+            (0.10, 0.45, 0.74, 1.00),
+            (0.12, 0.56, 0.89, 1.00),
+            (0.16, 0.64, 0.96, 1.00),
+        ),
+    )
+    imgui.end_disabled()
+    if not applicable:
+        imgui.text_disabled("Ces masses ne s'appliquent pas à ce scénario.")
+    elif not preview:
+        imgui.text_disabled("Arrête la simulation pour modifier les masses.")
+    if not apply_masses or not preview or not applicable:
+        return None
+    return ExperimentConfig(
+        scenario=state.draft_scenario,
+        particle_count=state.draft_particle_count,
+        seed=state.draft_seed,
+        disk_mass=state.draft_disk_mass,
+        bulge_mass=state.draft_bulge_mass,
+        central_mass=state.draft_central_mass,
+    )
+
+
 def _draw_data_drawer(
     state: UiState,
     stats: FrameStats,
@@ -475,27 +585,33 @@ def _draw_data_drawer(
     window_size: tuple[int, int],
     panel_width: float,
     dpi_scale: float,
-) -> SolverMode | None:
+    dock_top_y: float,
+) -> tuple[SolverMode | None, ExperimentConfig | None]:
     if state.data_drawer is DataDrawer.NONE:
-        return None
+        return None, None
     width, height = window_size
     drawer_width = panel_width - 24.0 * dpi_scale
     drawer_height = min(286.0 * dpi_scale, height - 84.0 * dpi_scale)
     drawer_x = width - panel_width + 12.0 * dpi_scale
-    drawer_y = height - drawer_height - 52.0 * dpi_scale
+    drawer_y = max(12.0 * dpi_scale, dock_top_y - drawer_height - 8.0 * dpi_scale)
     imgui.set_next_window_pos((drawer_x, drawer_y), imgui.Cond_.always)
     imgui.set_next_window_size((drawer_width, drawer_height), imgui.Cond_.always)
     imgui.set_next_window_bg_alpha(0.995)
     flags = _panel_flags() | imgui.WindowFlags_.no_title_bar
     expanded, _ = imgui.begin("Gravity##data-drawer", None, flags)
     selected_solver = None
+    selected_experiment = None
     if expanded:
         titles = {
+            DataDrawer.MASSES: "Masses de la galaxie",
             DataDrawer.STATISTICS: strings.PHYSICAL_STATS,
             DataDrawer.PERFORMANCE: strings.PERFORMANCE,
             DataDrawer.TECHNICAL: "Technique et commandes",
         }
-        imgui.text_colored((0.39, 0.75, 1.00, 1.00), "DONNÉES EN DIRECT")
+        eyebrow = (
+            "RÉGLAGES AVANCÉS" if state.data_drawer is DataDrawer.MASSES else "DONNÉES EN DIRECT"
+        )
+        imgui.text_colored((0.39, 0.75, 1.00, 1.00), eyebrow)
         imgui.text(titles[state.data_drawer])
         imgui.same_line()
         close_width = 30.0 * dpi_scale
@@ -503,14 +619,16 @@ def _draw_data_drawer(
         if imgui.button("×##close-drawer", (close_width, 0.0)):
             state.data_drawer = DataDrawer.NONE
         imgui.separator()
-        if state.data_drawer is DataDrawer.STATISTICS:
+        if state.data_drawer is DataDrawer.MASSES:
+            selected_experiment = _draw_mass_drawer(state, simulation)
+        elif state.data_drawer is DataDrawer.STATISTICS:
             _draw_statistics_drawer(observations)
         elif state.data_drawer is DataDrawer.PERFORMANCE:
             _draw_performance_drawer(stats, simulation)
         elif state.data_drawer is DataDrawer.TECHNICAL:
             selected_solver = _draw_technical_drawer(simulation, graphics)
     imgui.end()
-    return selected_solver
+    return selected_solver, selected_experiment
 
 
 def draw_control_panel(
@@ -543,6 +661,7 @@ def draw_control_panel(
     reset_camera = False
     selected_time_scale = None
     selected_camera_view = None
+    dock_top_y = float(height) - 48.0 * dpi_scale
     if expanded:
         dock_height = 36.0 * dpi_scale
         content_height = max(1.0, imgui.get_content_region_avail().y - dock_height)
@@ -573,10 +692,10 @@ def draw_control_panel(
                 dpi_scale,
             )
         imgui.end_child()
-        _draw_data_dock(state)
+        dock_top_y = _draw_data_dock(state)
     imgui.end()
 
-    selected_solver = _draw_data_drawer(
+    selected_solver, mass_experiment = _draw_data_drawer(
         state,
         stats,
         simulation=simulation,
@@ -585,6 +704,7 @@ def draw_control_panel(
         window_size=window_size,
         panel_width=panel_width,
         dpi_scale=dpi_scale,
+        dock_top_y=dock_top_y,
     )
     return UiActions(
         reset_camera=reset_camera,
@@ -593,7 +713,7 @@ def draw_control_panel(
         toggle_pause=toggle_pause,
         time_scale=selected_time_scale,
         solver_mode=selected_solver,
-        experiment=selected_experiment,
+        experiment=mass_experiment if mass_experiment is not None else selected_experiment,
         camera_view=selected_camera_view,
     )
 

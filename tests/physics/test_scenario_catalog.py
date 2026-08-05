@@ -22,7 +22,9 @@ def test_every_catalogue_scenario_is_reproducible_finite_and_centered(
     assert np.array_equal(first.state.velocities, second.state.velocities)
     assert np.array_equal(first.state.masses, second.state.masses)
     assert np.array_equal(first.components, second.components)
+    assert np.array_equal(first.origins, second.origins)
     assert not first.components.flags.writeable
+    assert not first.origins.flags.writeable
     assert np.linalg.norm(center_of_mass(first.state)) < 1e-14
     assert np.linalg.norm(total_momentum(first.state)) < 1e-14
     first.state.validate()
@@ -68,6 +70,30 @@ def test_spiral_keeps_its_analytic_halo_while_free_scenarios_do_not() -> None:
     cloud = generate_experiment(ExperimentConfig(ScenarioKind.RANDOM_BOUND, 400, 3))
     assert len(spiral.external_fields) == 1
     assert cloud.external_fields == ()
+
+
+def test_collision_preserves_two_object_origins_after_deterministic_shuffle() -> None:
+    collision = generate_experiment(ExperimentConfig(ScenarioKind.OBLIQUE_COLLISION, 2_001, 91))
+    assert set(np.unique(collision.origins)) == {0, 1}
+    assert np.count_nonzero(collision.origins == 0) == 1_000
+    assert np.count_nonzero(collision.origins == 1) == 1_001
+
+
+def test_galaxy_mass_controls_change_live_particle_masses_and_orbital_speeds() -> None:
+    baseline = generate_experiment(ExperimentConfig(particle_count=1_000, seed=4))
+    heavier = generate_experiment(
+        ExperimentConfig(
+            particle_count=1_000,
+            seed=4,
+            disk_mass=1.20,
+            bulge_mass=0.40,
+            central_mass=0.08,
+        )
+    )
+    assert np.sum(heavier.state.masses) == pytest.approx(1.68)
+    assert np.sum(baseline.state.masses) == pytest.approx(0.82)
+    assert not np.array_equal(heavier.state.masses, baseline.state.masses)
+    assert not np.array_equal(heavier.state.velocities, baseline.state.velocities)
 
 
 def test_public_generator_rejects_the_wrong_contract() -> None:

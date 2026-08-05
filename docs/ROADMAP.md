@@ -214,8 +214,12 @@ meaning and caveats, and `docs/STEP8_VALIDATION.md` for the Windows check.
 Step 9 adds a linear-time observation layer beside, never inside, the numerical
 solver:
 
-- distance, speed, origin-component, approximate-energy, and ejection colour
+- distance, speed, particle-mass, original-object, approximate-energy, and ejection colour
   modes rebuild presentation attributes from immutable worker snapshots;
+- every collision particle keeps a stable original-object label, so the two
+  galaxies remain distinguishable after they overlap;
+- disk, bulge, and central live masses are reproducible experiment parameters;
+  collision scenarios split the selected system totals between both galaxies;
 - centre of mass, median radius, maximum speed, estimated energy and drift, and
   linked/ejected counts are available without an additional pairwise pass;
 - an ejection requires all three conditions: beyond a boundary derived from the
@@ -235,7 +239,9 @@ solver:
   action;
 - statistics, performance, and technical comparison live in a fixed bottom dock
   whose drawers never require vertical scrolling or cover the simulation;
-- every colour mode has a dedicated high-contrast palette and matching legend;
+- continuous modes spread their currently visible 2nd-to-98th percentile range
+  across dedicated high-contrast palettes, while mass and origin use clearly
+  separated ranks/categories with matching legends;
   the centre-of-mass marker remains a first-class observation toggle;
 - the exact O(N2) engine remains available only in the technical drawer, with
   its explicit 1,000-particle safety limit.

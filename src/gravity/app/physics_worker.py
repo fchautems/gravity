@@ -256,6 +256,7 @@ class PhysicsWorker:
         initial_observations = observe_particles(
             scenario.state,
             scenario.components,
+            scenario.origins,
             scenario.external_fields,
             softening=scenario.softening,
             ejection_radius=ejection_radius,
@@ -289,6 +290,7 @@ class PhysicsWorker:
         observations = observe_particles(
             state,
             runtime.scenario.components,
+            runtime.scenario.origins,
             runtime.scenario.external_fields,
             softening=runtime.scenario.softening,
             ejection_radius=runtime.ejection_radius,

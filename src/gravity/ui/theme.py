@@ -41,6 +41,7 @@ def configure_theme(dpi_scale: float) -> None:
     style.set_color_(imgui.Col_.text, (0.91, 0.94, 1.00, 1.00))
     style.set_color_(imgui.Col_.text_disabled, (0.52, 0.58, 0.70, 1.00))
     style.set_color_(imgui.Col_.window_bg, (0.024, 0.036, 0.070, 0.975))
+    style.set_color_(imgui.Col_.popup_bg, (0.035, 0.052, 0.092, 0.995))
     style.set_color_(imgui.Col_.border, (0.15, 0.23, 0.38, 0.75))
     style.set_color_(imgui.Col_.frame_bg, (0.075, 0.105, 0.175, 1.00))
     style.set_color_(imgui.Col_.frame_bg_hovered, (0.10, 0.17, 0.27, 1.00))
@@ -52,4 +53,5 @@ def configure_theme(dpi_scale: float) -> None:
     style.set_color_(imgui.Col_.slider_grab_active, (0.40, 0.76, 1.00, 1.00))
     style.set_color_(imgui.Col_.header, (0.08, 0.24, 0.40, 1.00))
     style.set_color_(imgui.Col_.header_hovered, (0.12, 0.35, 0.56, 1.00))
+    style.set_color_(imgui.Col_.header_active, (0.16, 0.45, 0.70, 1.00))
     style.set_color_(imgui.Col_.separator, (0.16, 0.25, 0.40, 1.00))

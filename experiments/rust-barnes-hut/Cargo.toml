@@ -5,6 +5,7 @@ edition = "2021"
 
 [lib]
 path = "force.rs"
+crate-type = ["rlib", "cdylib"]
 
 [profile.release]
 opt-level = 3

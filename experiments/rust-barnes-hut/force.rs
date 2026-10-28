@@ -85,3 +85,33 @@ mod tests {
         assert_eq!(a.direct_particles, 1);
     }
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn gravity_bh_forces(
+    n: usize, nodes: usize,
+    positions: *const f64, masses: *const f64,
+    half_sizes: *const f64, children: *const i32,
+    starts: *const i32, counts: *const i32,
+    node_masses: *const f64, centers_of_mass: *const f64,
+    particle_order: *const i32, inverse_order: *const i32,
+    theta: f64, softening_squared: f64,
+    output: *mut f64,
+) {
+    let tree = Tree {
+        positions: std::slice::from_raw_parts(positions, n*3),
+        masses: std::slice::from_raw_parts(masses, n),
+        half_sizes: std::slice::from_raw_parts(half_sizes, nodes),
+        children: std::slice::from_raw_parts(children, nodes*8),
+        starts: std::slice::from_raw_parts(starts, nodes),
+        counts: std::slice::from_raw_parts(counts, nodes),
+        node_masses: std::slice::from_raw_parts(node_masses, nodes),
+        centers_of_mass: std::slice::from_raw_parts(centers_of_mass, nodes*3),
+        particle_order: std::slice::from_raw_parts(particle_order, n),
+        inverse_order: std::slice::from_raw_parts(inverse_order, n),
+    };
+    let out = std::slice::from_raw_parts_mut(output, n*3);
+    for target in 0..n {
+        let f = accumulate_target(&tree, target, theta, softening_squared);
+        out[target*3..target*3+3].copy_from_slice(&f.acceleration);
+    }
+}

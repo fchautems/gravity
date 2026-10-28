@@ -13,6 +13,8 @@ jobs:
         run: cargo test --manifest-path experiments/rust-barnes-hut/Cargo.toml --release
       - name: Rust optimized build
         run: cargo build --manifest-path experiments/rust-barnes-hut/Cargo.toml --release
+      - name: Rust direct-force reference (not comparable to Barnes-Hut)
+        run: cargo run --manifest-path experiments/rust-barnes-hut/Cargo.toml --release --example direct_reference
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

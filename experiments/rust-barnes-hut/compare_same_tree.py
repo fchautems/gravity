@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from gravity.physics.barnes_hut import BarnesHutSolver, _barnes_hut_acceleration_kernel
+from gravity.physics.barnes_hut import BarnesHutSolver, _barnes_hut_acceleration_kernel, _barnes_hut_acceleration_parallel_kernel
 
 ROOT = Path(__file__).resolve().parent
 LIBRARY = ROOT / "target" / "release" / ("gravity_rust_force_experiment.dll" if sys.platform == "win32" else "libgravity_rust_force_experiment.dylib" if sys.platform == "darwin" else "libgravity_rust_force_experiment.so")
@@ -15,6 +15,9 @@ lib = ctypes.CDLL(str(LIBRARY))
 fn = lib.gravity_bh_forces
 fn.argtypes = [ctypes.c_size_t, ctypes.c_size_t] + [PTR] * 10 + [ctypes.c_double, ctypes.c_double, PTR]
 fn.restype = None
+fn_parallel = lib.gravity_bh_forces_parallel
+fn_parallel.argtypes = fn.argtypes
+fn_parallel.restype = None
 
 def pointer(a):
     assert a.flags.c_contiguous
@@ -43,12 +46,29 @@ def run(n):
             tree.counts, tree.masses, tree.centers_of_mass, tree.particle_order,
             tree.inverse_order,
         )), solver.theta, 0.01, pointer(out_rust))
+    def numba_parallel():
+        _barnes_hut_acceleration_parallel_kernel(
+            positions, masses, tree.centers, tree.half_sizes, tree.children,
+            tree.starts, tree.counts, tree.masses, tree.centers_of_mass,
+            tree.particle_order, tree.inverse_order, solver.theta, 0.01,
+            tree.depth_limit, out_numba, accepted, direct,
+        )
+    def rust_parallel():
+        fn_parallel(n, tree.node_count, *map(pointer, (
+            positions, masses, tree.half_sizes, tree.children, tree.starts,
+            tree.counts, tree.masses, tree.centers_of_mass, tree.particle_order,
+            tree.inverse_order,
+        )), solver.theta, 0.01, pointer(out_rust))
     numba()
     rust()
     absolute_error = float(np.max(np.abs(out_numba - out_rust)))
     relative_error = float(np.linalg.norm(out_numba-out_rust) / max(np.linalg.norm(out_numba), 1e-30))
     if not np.allclose(out_numba, out_rust, rtol=1e-10, atol=1e-10):
         raise AssertionError(f"Rust/Numba mismatch n={n}: max_abs={absolute_error}")
+    numba_parallel()
+    rust_parallel()
+    if not np.allclose(out_numba, out_rust, rtol=1e-10, atol=1e-10):
+        raise AssertionError(f'parallel Rust/Numba mismatch n={n}')
     def median_ms(f):
         times = []
         for _ in range(7):
@@ -58,7 +78,9 @@ def run(n):
         return float(np.median(times))
     return {"particles":n, "max_absolute_error":absolute_error,
             "relative_l2_error":relative_error, "numba_serial_ms":median_ms(numba),
-            "rust_serial_ffi_ms":median_ms(rust)}
+            "rust_serial_ffi_ms":median_ms(rust),
+            "numba_parallel_ms":median_ms(numba_parallel),
+            "rust_parallel_ffi_ms":median_ms(rust_parallel)}
 
 if __name__ == "__main__":
     print(json.dumps([run(n) for n in (1000, 5000, 10000)], indent=2))

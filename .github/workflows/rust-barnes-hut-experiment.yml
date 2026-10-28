@@ -24,9 +24,15 @@ jobs:
           python -m pip install -e .
       - name: Run existing Numba baseline
         run: python benchmarks/step6_barnes_hut.py --json > numba-baseline.json
-      - name: Same-tree Rust versus Numba comparison\n        run: python experiments/rust-barnes-hut/compare_same_tree.py > same-tree-results.json\n      - name: Show comparison\n        run: cat same-tree-results.json\n      - uses: actions/upload-artifact@v4
+      - name: Same-tree Rust versus Numba comparison
+        run: python experiments/rust-barnes-hut/compare_same_tree.py > same-tree-results.json
+      - name: Show comparison
+        run: cat same-tree-results.json
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: rust-experiment-baseline
-          path: |\n            numba-baseline.json\n            same-tree-results.json
+          path: |
+            numba-baseline.json
+            same-tree-results.json
           if-no-files-found: ignore
